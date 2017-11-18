@@ -232,7 +232,10 @@ def rd_parse_term(token_container):
         if (token is None):
             break
         else:
-            list_of_terms.append(Node(token[1], token=token))
+            if token[0] == TokenType.UNQUOTED_TERM:
+                list_of_terms.append(Node(token[1], token=token))
+            else:
+                list_of_terms.append(Node('"{}"'.format(token[1]), token=token))
 
     # if len(parent.children) == 0:
     #     raise ValueError("Say What")
@@ -276,44 +279,33 @@ def rewrite_expression_groups(tree):
     if (tree.token[0] == TokenType.EXPRESSION and children_all_tokens and len(children) >= 2):
         # Concatentated Node
         concat_text = " ".join([child.token[1] for child in children])
-        concat_node = Node(concat_text, token=(TokenType.QUOTED_TERM, concat_text))
+        concat_node = Node('"{}"'.format(concat_text), token=(TokenType.QUOTED_TERM, concat_text))
 
         # And Nodes
         and_base = Node("AND", token=(TokenType.AND,))
-        and_node = and_base
-        children[0].parent = and_base
-        for child in children[1:-1]:
-            and_node = Node("AND", parent=and_node, token=(TokenType.AND,))
-            child.parent = and_node
-        children[-1].parent = and_node
+        for child in children:
+            child.parent = and_base
 
         # OR Nodes
         or_base = Node("OR", token=(TokenType.OR,))
-        or_node = or_base
-        Node(children[0].token[1], parent=or_base, token=children[0].token)
-        for child in children[1:-1]:
-            or_node = Node("OR", parent=or_node, token=(TokenType.OR,))
-            Node(child.token[1], parent=or_node, token=child.token)
-        Node(children[-1].token[1], parent=or_node, token=children[-1].token)
+        for child in children:
+            Node(child.token[1], parent=or_base, token=child.token)
 
         if (tree.is_root):
             tree.name = "OR"
             tree.token = (TokenType.OR,)
-            parent_or = tree
+            rewrite_root = tree
         else:
-            parent_or = Node("OR", parent=tree.parent, token=(TokenType.OR,))
+            rewrite_root = Node("OR", parent=tree.parent, token=(TokenType.OR,))
             tree.parent = None
-        child_or = Node("OR", parent=parent_or, token=(TokenType.OR,))
-        concat_node.parent = parent_or
-        and_base.parent = child_or
-        or_base.parent = child_or
+        rd_apply_parent(rewrite_root, concat_node, and_base, or_base)
 
 
 if __name__ == "__main__":
     tokenized = tokenize_query("((Hello AND Hi) OR NOT (Love Hate) OR NOT 'NOT AND OR HELLO!')"
                                "AND ((Hello Yellow) McJello)")
-    # tokenized = tokenize_query("Hello Hi Bye")
+    # tokenized = tokenize_query("Good Morning America, How Are You Today?")
     print("Tokenizer:")
     pprint.pprint(tokenized)
     print("\nAST:")
-    print(RenderTree(parse_query(tokenized)))
+    print(RenderTree(parse_query(tokenized)).by_attr("name"))
