@@ -1,4 +1,6 @@
 import enum
+import pprint
+import itertools
 from anytree import Node, RenderTree
 
 
@@ -11,6 +13,7 @@ class TokenType(enum.Enum):
     NOT = 5            # NOT in all capital letters for unary not
     PAREN_L = 6        # (
     PAREN_R = 7        # )
+    EXPRESSION = 8     # Container to put tokens into
 
 
 def tokenize_query(query):
@@ -102,5 +105,215 @@ def tokenize_query(query):
 
     return token_stream
 
+
+class TokenContainer():
+    def __init__(self, token_list):
+        self._location = 0
+        self._length = len(token_list)
+        self._token_list = token_list
+
+    def get_next_token(self, ttype):
+        if (self._location < self._length and self._token_list[self._location][0] == ttype):
+            ret = self._token_list[self._location]
+            self._location += 1
+            return ret
+
+    def skip_next_token(self, ttype):
+        if (self._location < self._length and self._token_list[self._location][0] == ttype):
+            self._location += 1
+            return True
+        return False
+
+
+def rd_apply_parent(parent, *children):
+    # Make sure everything is a list of lists
+    children_2d = [c if isinstance(c, list) else [c] for c in children]
+    # Flatten the 2d list
+    flattened_children = itertools.chain.from_iterable([c if isinstance(c, list) else [c] for c in children])
+    for child in flattened_children:
+        child.parent = parent
+
+'''
+Grammar:
+
+expr ::= or_expr
+or_expr ::= and_expr | and_expr OR expr
+and_expr ::= not_expr | not_expr AND expr
+not_expr ::= factor | NOT factor
+factor ::= term | term '(' expr ')' term
+term ::= (unquoted_term | quoted_term)*
+'''
+
+
+def parse_query(token_list):
+    parse_tree = rd_parse_expr(TokenContainer(token_list))
+    clean_up_excess_expressions(parse_tree)
+    rewrite_expression_groups(parse_tree)
+    return parse_tree
+
+
+def rd_parse_expr(token_container):
+    return rd_parse_or_expr(token_container)
+
+
+def rd_parse_or_expr(token_container):
+    left = rd_parse_and_expr(token_container)
+
+    if token_container.skip_next_token(TokenType.OR):
+        right = rd_parse_expr(token_container)
+        parent = Node("OR", token=(TokenType.OR,))
+
+        rd_apply_parent(parent, left, right)
+        return parent
+    else:
+        return left
+
+
+def rd_parse_and_expr(token_container):
+    left = rd_parse_not_expr(token_container)
+
+    if token_container.skip_next_token(TokenType.AND):
+        right = rd_parse_expr(token_container)
+        parent = Node("AND", token=(TokenType.AND,))
+
+        rd_apply_parent(parent, left, right)
+        return parent
+    else:
+        return left
+
+
+def rd_parse_not_expr(token_container):
+    was_a_not = token_container.skip_next_token(TokenType.NOT)
+
+    factor = rd_parse_factor(token_container)
+
+    if (was_a_not):
+        parent = Node("NOT", token=(TokenType.NOT,))
+
+        rd_apply_parent(parent, factor)
+        return parent
+    else:
+        return factor
+
+
+def rd_parse_factor(token_container):
+    left = rd_parse_term(token_container)
+
+    if token_container.skip_next_token(TokenType.PAREN_L):
+        expr = rd_parse_expr(token_container)
+        # print(RenderTree(expr))
+        if not token_container.skip_next_token(TokenType.PAREN_R):
+            raise ValueError("No Matching Right Paren")
+
+        right = rd_parse_term(token_container)
+
+        parent = Node("EXPRESSION", token=(TokenType.EXPRESSION,))
+
+        rd_apply_parent(parent, left, expr, right)
+
+        return parent
+    else:
+        parent = Node("EXPRESSION", token=(TokenType.EXPRESSION,))
+
+        rd_apply_parent(parent, left)
+
+        return parent
+
+
+def rd_parse_term(token_container):
+    list_of_terms = []
+
+    while True:
+        token = token_container.get_next_token(TokenType.QUOTED_TERM)
+        if (token is None):
+            token = token_container.get_next_token(TokenType.UNQUOTED_TERM)
+        # print(token_container._token_list[token_container._location:])
+
+        if (token is None):
+            break
+        else:
+            list_of_terms.append(Node(token[1], token=token))
+
+    # if len(parent.children) == 0:
+    #     raise ValueError("Say What")
+
+    return list_of_terms
+
+
+def clean_up_excess_expressions(tree):
+    '''
+    Remove nested unnessisary EXPRESSIONS in a true (when an expression just contains other expressions) and
+    where an EXPRESSION holds only one child (where it is ment to hold many)
+
+     inputs: tree - root node of the tree
+    outputs: None
+    '''
+    # Keep calling recursivly down then start merging depth-first
+    for child in tree.children:
+        clean_up_excess_expressions(child)
+        # Merge when there are two expressions in a row. Merge subchildren up two
+        if (tree.token[0] == TokenType.EXPRESSION and (child.token[0] == TokenType.EXPRESSION)):
+            for sub_child in child.children:
+                sub_child.parent = tree
+            child.parent = None
+        # Merge when there is an EXPRESSION with one child. Merge children up to the parent of the tree
+        if (tree.token[0] == TokenType.EXPRESSION and len(tree.children) == 1):
+            tree.children[0].parent = tree.parent
+            tree.parent = None
+
+
+def rewrite_expression_groups(tree):
+    children = tree.children
+
+    if len(children) == 0:
+        return
+
+    for child in children:
+        rewrite_expression_groups(child)
+
+    children_all_tokens = all([child.token[0] in [TokenType.UNQUOTED_TERM, TokenType.QUOTED_TERM]
+                               for child in children])
+    if (tree.token[0] == TokenType.EXPRESSION and children_all_tokens and len(children) >= 2):
+        # Concatentated Node
+        concat_text = " ".join([child.token[1] for child in children])
+        concat_node = Node(concat_text, token=(TokenType.QUOTED_TERM, concat_text))
+
+        # And Nodes
+        and_base = Node("AND", token=(TokenType.AND,))
+        and_node = and_base
+        children[0].parent = and_base
+        for child in children[1:-1]:
+            and_node = Node("AND", parent=and_node, token=(TokenType.AND,))
+            child.parent = and_node
+        children[-1].parent = and_node
+
+        # OR Nodes
+        or_base = Node("OR", token=(TokenType.OR,))
+        or_node = or_base
+        Node(children[0].token[1], parent=or_base, token=children[0].token)
+        for child in children[1:-1]:
+            or_node = Node("OR", parent=or_node, token=(TokenType.OR,))
+            Node(child.token[1], parent=or_node, token=child.token)
+        Node(children[-1].token[1], parent=or_node, token=children[-1].token)
+
+        if (tree.is_root):
+            tree.name = "OR"
+            tree.token = (TokenType.OR,)
+            parent_or = tree
+        else:
+            parent_or = Node("OR", parent=tree.parent, token=(TokenType.OR,))
+            tree.parent = None
+        child_or = Node("OR", parent=parent_or, token=(TokenType.OR,))
+        concat_node.parent = parent_or
+        and_base.parent = child_or
+        or_base.parent = child_or
+
+
 if __name__ == "__main__":
-    print(tokenize_query("(\'Hello\') OR NOT Bye Hello"))
+    tokenized = tokenize_query("((Hello AND Hi) OR NOT (Love Hate) OR NOT 'NOT AND OR HELLO!')"
+                               "AND ((Hello Yellow) McJello)")
+    # tokenized = tokenize_query("Hello Hi Bye")
+    print("Tokenizer:")
+    pprint.pprint(tokenized)
+    print("\nAST:")
+    print(RenderTree(parse_query(tokenized)))
