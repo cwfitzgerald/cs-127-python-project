@@ -1,0 +1,8 @@
+corelib/*.py text
+flask/static/*.css text
+flask/static/*.png binary
+flask/static/*.svg binary
+flask/templates/*.html text
+flask/*.py text
+datasets/*.csv binary
+datasets/index.json text

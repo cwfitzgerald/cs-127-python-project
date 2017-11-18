@@ -33,3 +33,20 @@ Our project is a web application for searching key terms within multiple dataset
      - Parts of phrase together or individually
    - Document statistic generation
    - Caching (SQLite)
+
+## Folder Structure
+
+ - corelib
+   - \*.py text
+ - flask
+   - static
+     - \*.css text
+     - \*.png binary
+     - \*.svg binary
+   - templates
+     - \*.html text
+   - \*.py text
+ - datasets
+   - \*.csv binary
+   - index.json text
+
