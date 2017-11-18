@@ -1,7 +1,7 @@
-import enum
-import pprint
-import itertools
 from anytree import Node, RenderTree
+import enum
+import itertools
+import pprint
 
 
 class TokenType(enum.Enum):
@@ -261,8 +261,9 @@ def clean_up_excess_expressions(tree):
             child.parent = None
         # Merge when there is an EXPRESSION with one child. Merge children up to the parent of the tree
         if (tree.token[0] == TokenType.EXPRESSION and len(tree.children) == 1):
-            tree.children[0].parent = tree.parent
-            tree.parent = None
+            if (tree.parent):
+                tree.children[0].parent = tree.parent
+                tree.parent = None
 
 
 def rewrite_expression_groups(tree):
@@ -302,8 +303,11 @@ def rewrite_expression_groups(tree):
 
 
 if __name__ == "__main__":
-    tokenized = tokenize_query("((Hello AND Hi) OR NOT (Love Hate) OR NOT 'NOT AND OR HELLO!')"
-                               "AND ((Hello Yellow) McJello)")
+    bizzare_query = "(((Trains Planes Automobiles) AND NOT ('Ships AND Dips' AND Lips)) AND"\
+                    " ((something funny happened on the way to the forum) AND NOT gallagher))"
+    tokenized = tokenize_query(bizzare_query)
+    # tokenized = tokenize_query("((Hello AND Hi) OR NOT (Love Hate) OR NOT 'NOT AND OR HELLO!')"
+    #                            "AND ((Hello Yellow) McJello)")
     # tokenized = tokenize_query("Good Morning America, How Are You Today?")
     print("Tokenizer:")
     pprint.pprint(tokenized)
