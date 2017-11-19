@@ -2,10 +2,10 @@ from anytree import Node, RenderTree
 import enum
 import itertools
 import pprint
+import timeit
 
 
 class TokenType(enum.Enum):
-    END = 0            # End of query
     QUOTED_TERM = 1    # Search term surrounded by quotes
     UNQUOTED_TERM = 2  # Array of unquoted terms
     AND = 3            # AND in all capital letters for binary and
@@ -16,16 +16,16 @@ class TokenType(enum.Enum):
     EXPRESSION = 8     # Container to put tokens into
 
 
-def tokenize_query(query):
+def lex_query(query):
     '''
-    Tokenizes a search query into an array of tokens for the parser to parse
+    lexes a search query into an array of tokens for the parser to parse
 
-     input: query - The query to tokenize
+     input: query - The query to lex
     output: the list of tokens
     '''
 
     # Evaluate the query length as is constantly referred to throughout
-    # the tokenizer, and len(query) is O(N) :|
+    # the lexer and so lookup is faster
     query_length = len(query)
 
     token_stream = []
@@ -33,7 +33,7 @@ def tokenize_query(query):
     # Index into the query
     i = 0
 
-    # I have yet to be able to write an O(N) tokenizer that doesn't turn into a bunch of confusing control
+    # I have yet to be able to write an O(N) lexer that doesn't turn into a bunch of confusing control
     # flow and index thrashing. I have done my best to explain the rationalle behind this, but viewer beware
     while i < query_length:
         # Check if we're pointing to the beginning of either three
@@ -100,8 +100,6 @@ def tokenize_query(query):
             continue
 
         i += 1
-
-    token_stream.append((TokenType.END,))
 
     return token_stream
 
@@ -262,8 +260,16 @@ def clean_up_excess_expressions(tree):
         # Merge when there is an EXPRESSION with one child. Merge children up to the parent of the tree
         if (tree.token[0] == TokenType.EXPRESSION and len(tree.children) == 1):
             if (tree.parent):
-                tree.children[0].parent = tree.parent
+                child.parent = tree.parent
                 tree.parent = None
+            else:
+                tree.name = child.name
+                tree.token = child.token
+
+                for sub_child in child.children:
+                    sub_child.parent = tree
+
+                child.parent = None
 
 
 def rewrite_expression_groups(tree):
@@ -301,15 +307,18 @@ def rewrite_expression_groups(tree):
             tree.parent = None
         rd_apply_parent(rewrite_root, concat_node, and_base, or_base)
 
-
 if __name__ == "__main__":
     bizzare_query = "(((Trains Planes Automobiles) AND NOT ('Ships AND Dips' AND Lips)) AND"\
                     " ((something funny happened on the way to the forum) AND NOT gallagher))"
-    tokenized = tokenize_query(bizzare_query)
-    # tokenized = tokenize_query("((Hello AND Hi) OR NOT (Love Hate) OR NOT 'NOT AND OR HELLO!')"
+    # lexed = lex_query(bizzare_query)
+
+    # lexed = lex_query("((Hello AND Hi) OR NOT (Love Hate) OR NOT 'NOT AND OR HELLO!')"
     #                            "AND ((Hello Yellow) McJello)")
-    # tokenized = tokenize_query("Good Morning America, How Are You Today?")
-    print("Tokenizer:")
-    pprint.pprint(tokenized)
+    lexed = lex_query("Google Sucks")
+    print("lexer:")
+    print(timeit.timeit("lex_query(bizzare_query)", number=1000, globals=globals()), "ms")
+    pprint.pprint(lexed)
+
     print("\nAST:")
-    print(RenderTree(parse_query(tokenized)).by_attr("name"))
+    print(timeit.timeit("parse_query(lexed)", number=1000, globals=globals()), "ms")
+    print(RenderTree(parse_query(lexed)).by_attr("name"))
