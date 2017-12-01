@@ -101,3 +101,5 @@ ENV/
 .mypy_cache/
 
 datasets/*.csv
+datasets/*.sql
+datasets/*.tar.gz

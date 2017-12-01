@@ -13,7 +13,7 @@ if __name__ == "__main__":
         delete = False
 
     if (len(sys.argv) < 3):
-        print("Usage: {} [<input_csv>]*")
+        print("Usage: {} [<input_csv>]*".format(sys.argv[0]))
         exit(1)
 
     settings = json.load(open("index.json"))

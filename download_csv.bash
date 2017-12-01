@@ -1,6 +1,6 @@
 #!/bin/bash
 
-wget www.static.connorwfitzgerald.com/csv_cache --spider -r -P datasets
+wget www.static.connorwfitzgerald.com/csv_cache/{offenders.tar.gz,gutenberg.tar.gz} -P datasets
 
 for i in $( find datasets -type f -name '*.tar.gz' ); do
 	tar -xf $i -C .
