@@ -8,13 +8,13 @@ database = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../dataset
 connection = sqlite3.connect(database)
 
 
-def iterate_over_file(filename):
+def iterate_over_file(database_name):
     cursor = connection.cursor()
 
-    filename = os.path.basename(filename)
+    database_name = os.path.basename(database_name)
 
     cursor.execute('''SELECT id, contents FROM data WHERE filename = :filename''',
-                   {"filename": filename})
+                   {"filename": database_name})
 
     while True:
         res = cursor.fetchone()
@@ -29,13 +29,13 @@ def iterate_over_file(filename):
         yield (ident, contents)
 
 
-def lookup_id(filename, id):
+def lookup_id(database_name, id):
     cursor = connection.cursor()
 
-    filename = os.path.basename(filename)
+    database_name = os.path.basename(database_name)
 
     cursor.execute('''SELECT contents FROM data WHERE filename = :filename and id = :id''',
-                   {"filename": filename})
+                   {"filename": database_name})
 
     res = cursor.fetchone()
 
