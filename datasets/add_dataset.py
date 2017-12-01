@@ -6,10 +6,10 @@ import os
 import itertools
 import operator
 
-##This method takes .csv file names as arguments and checks whether they exist in index.JSON. 
-##If so, creates a SQL database from the CSV file, with three columns, filename, id, and contents.
-##This is in order to deal with the massive data amounts in the csv's, and not have to
-##iterate through everything in order to reach the file contents when displaying the results.
+# This method takes .csv file names as arguments and checks whether they exist in index.JSON. 
+# If so, creates a SQL database from the CSV file, with three columns, filename, id, and contents.
+# This is in order to deal with the massive data amounts in the CSV's, and not have to
+# iterate through everything in order to reach the file contents when displaying the results.
 
 if __name__ == "__main__":
     if (sys.argv[1] in ["--delete", "-d"]):
