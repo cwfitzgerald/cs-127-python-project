@@ -1,20 +1,33 @@
+import pickle
 import json
+import pickletools
 import os
 import sqlite3
 import itertools
+import threading
 
 
 database = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../datasets/datasets.sql")
-connection = sqlite3.connect(database)
 
 
-def iterate_over_file(database_name):
-    cursor = connection.cursor()
+class ThreadLocalConnection(threading.local):
+    connection = connection = sqlite3.connect(database)
 
-    database_name = os.path.basename(database_name)
+
+tlc = ThreadLocalConnection()
+
+settings = json.load(open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../datasets/index.json")))
+
+
+def iterate_over_file(dataset_name):
+    cursor = tlc.connection.cursor()
+
+    dataset_name = os.path.basename(dataset_name)
+
+    dataset_id = settings[dataset_name]["id"]
 
     cursor.execute('''SELECT id, contents FROM data WHERE filename = :filename''',
-                   {"filename": database_name})
+                   {"filename": dataset_id})
 
     while True:
         res = cursor.fetchone()
@@ -24,27 +37,56 @@ def iterate_over_file(database_name):
 
         ident = res[0]
 
-        contents = json.loads(res[1])
+        contents = pickle.loads(res[1])
 
         yield (ident, contents)
 
 
-def lookup_id(database_name, id):
-    cursor = connection.cursor()
+def lookup_id(dataset_name, id):
+    cursor = tlc.connection.cursor()
 
-    database_name = os.path.basename(database_name)
+    dataset_name = os.path.basename(dataset_name)
+
+    dataset_id = settings[dataset_name]["id"]
 
     cursor.execute('''SELECT contents FROM data WHERE filename = :filename and id = :id''',
-                   {"filename": database_name})
+                   {"filename": dataset_id})
 
     res = cursor.fetchone()
 
     if (res is None):
         return ValueError("No id found")
 
-    contents = json.loads(res[0])
+    contents = pickle.loads(res[0])
 
     return contents
+
+
+def create_iindex_database(dataset_id, clean=False):
+    cursor = tlc.connection.cursor()
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS iindex (file_id integer, key integer primary key, contents text)''')
+
+    if clean:
+        cursor.execute('''DELETE FROM iindex WHERE file_id = :file_id''',
+                       {"file_id": dataset_name})
+
+    tlc.connection.commit()
+
+
+def add_to_iindex_database(dataset_id, document_ids, clean=False):
+    cursor = tlc.connection.cursor()
+
+    doclist = list(document_ids)
+
+    cursor.execute('''INSERT OR REPLACE INTO iindex (file_id, contents) VALUES(:file_id, :contents)''',
+                   {"file_id": dataset_id, "contents": pickletools.optimize(pickle.dumps(doclist))})
+
+    return cursor.lastrowid
+
+
+def commit():
+    tlc.connection.commit()
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ import sqlite3
 import csv
 import sys
 import json
+import pickle
+import pickletools
 import os
 import itertools
 import operator
@@ -17,7 +19,7 @@ if __name__ == "__main__":
     else:
         delete = False
 
-    if (len(sys.argv) < 3):
+    if (len(sys.argv) < 2):
         print("Usage: {} [<input_csv>]*".format(sys.argv[0]))
         exit(1)
 
@@ -37,18 +39,19 @@ if __name__ == "__main__":
     filenames = list(itertools.compress(filenames, in_json))
     filenames_short = list(itertools.compress(filenames_short, in_json))
     id_cols = [settings[f]["document_column"] for f in filenames_short]
+    dataset_ids = [settings[f]["id"] for f in filenames_short]
 
     connect = sqlite3.connect("datasets.sql")
 
     c = connect.cursor()
 
-    c.execute('''CREATE TABLE IF NOT EXISTS data (filename text, id text, contents text)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS data (filename integer, id integer primary key, contents text)''')
 
-    for filename, shortname, col in zip(filenames, filenames_short, id_cols):
+    for filename, shortname, col, dataset_id in zip(filenames, filenames_short, id_cols, dataset_ids):
         print("Adding file {}:".format(filename))
 
         if (delete):
-            c.execute('''DELETE FROM data WHERE filename = :name''', {"name": shortname})
+            c.execute('''DELETE FROM data WHERE filename = :id''', {"id": dataset_id})
 
         csv_reader = csv.reader(open(filename, encoding="utf8", errors="ignore"))
         csv_reader.__next__()  # Skip header
@@ -60,8 +63,8 @@ if __name__ == "__main__":
 
             sys.stdout.write("\033[K\rWriting row #{}: {}".format(i, id_val))
 
-            c.execute('''INSERT OR IGNORE INTO data (filename, id, contents) VALUES (:filename, :id, :contents)''',
-                      {"filename": shortname, "id": id_val, "contents": json.dumps(row)})
+            c.execute('''INSERT OR IGNORE INTO data (filename, contents) VALUES (:filename, :contents)''',
+                      {"filename": dataset_id, "contents": pickletools.optimize(pickle.dumps(row))})
 
             i += 1
 

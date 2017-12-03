@@ -1,16 +1,18 @@
 {
 	"offenders.csv":{
 		"name": "offenders.csv",
+		"id": 0,
 		"description": "Last words of Texas Death Row Inmates",
 		"headers": ["Execution #", "Last Name", "First Name", "TDCJ Number", "Age", "Date", "Race", "County", "Last Statement"],
 		"document_column": 0,
-		"data_column": [1, 2, 4, 6, 7, 8, 9]
+		"data_columns": [1, 2, 4, 6, 7, 8]
 	},
 	"gutenberg.csv":{
 		"name": "gutenberg.csv",
+		"id": 1,
 		"description": "Entire corpus of Project Gutenberg",
 		"headers": ["Number","Title","Author","Language","String"],
 		"document_column": 0,
-		"data_column": [0,1,2,3,4]
+		"data_columns": [0,1,2,3,4]
 	}
 }
