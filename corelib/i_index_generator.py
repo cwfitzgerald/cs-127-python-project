@@ -8,18 +8,19 @@
 # ever one copy of a value at any one time
 
 import collections
-import pickle
-import json
 import database_interface as db
 import functools
 import itertools
+import json
 import operator
 import os           # For path manipulations
+import pickle
 import pprint
+import re
 import sys
 
 
-def iindex_build_csv(filename, split=None, filt=None):
+def iindex_build_csv(filename):
     '''
     inputs: filename        - csv to inspect
             document_column - column of csv to use as the name of the "document"
@@ -35,12 +36,14 @@ def iindex_build_csv(filename, split=None, filt=None):
     # A lambda is a mini function that returns what is to the right of the colon
     d = collections.defaultdict(lambda: set())
 
+    word_splitter = re.compile('[\W0-9]+', re.UNICODE)
+
     document_column = db.settings[filename]["document_column"]
     data_columns = db.settings[filename]["data_columns"]
     dataset_id = db.settings[filename]["id"]
 
     # Open the file
-    db.create_iindex_database(filename, True)
+    db.create_iindex_database(dataset_id, True)
 
     # Go through each row in the csv
     for ident, row in db.iterate_over_file(filename):
@@ -73,26 +76,14 @@ def iindex_build_csv(filename, split=None, filt=None):
         else:
             keys = [row[data_columns]]
 
-        # If we are passed a value to split by we must split all keys
-        if not (split is None):
-            # Apply the split
-            array_of_split_keys = [val.split(split) for val in keys]
-        if (split is None):
-            array_of_split_keys = [val.split() for val in keys]
+        array_of_split_keys = [word_splitter.split(val.lower()) for val in keys]
 
         # Array_of_split_keys is an array of arrays, so we need to flatten it from a 2D array
         # to a 1D array. itertools.chain.from_iterable does this.
         keys = itertools.chain.from_iterable(array_of_split_keys)
 
         # Grab the data that we will act is the document name
-        document_data = row[document_column]
-
-        # If there is a filter function, we must apply it to all keys and the document name itself
-        if not (filt is None):
-            # map calls filt on all elements of keys and returns and "array"
-            keys = map(filt, keys)
-            # call the function directly
-            document_data = filt(document_data)
+        document_data = ident
 
         # Add each key to point to the document
         keys = list(keys)
@@ -107,9 +98,23 @@ def iindex_build_csv(filename, split=None, filt=None):
 
         # break
 
+    translation = {}
+
     # Return the inverse index
+    count = 0
     for key, values in d.items():
-        db.add_to_iindex_database(filename, values, key)
+        int_key = db.add_to_iindex_database(dataset_id, values)
+        translation[key] = int_key
+        if count % 1000 == 0:
+            sys.stdout.write("Adding key \'{}\' -> {} -> {} documents\n".format(key, int_key, len(values)))
+            sys.stdout.flush()
+        count += 1
+
+    tf = open(db.translations, 'a+')
+    tf.seek(0)
+    translation_file = json.load(tf)
+    translation_file[dataset_id] = translation
+    json.dump(translation_file, open(db.translations, 'w'))
 
     db.commit()
 
@@ -176,10 +181,9 @@ if __name__ == "__main__":
                                                  )]).strip()
 
     # print(["{}, {}".format(x, str(x) <= '1') for x in range(10)])
-    offenddict = (iindex_build_csv("gutenberg.csv",
-                                   filt=filter_non_alphanumeric))
+    offenddict = iindex_build_csv("gutenberg.csv")
 
-    # offenddict = {key: list(value) for key, value in offenddict.items()}
+    offenddict = {key: list(value) for key, value in offenddict.items()}
 
     # pprint.pprint(offenddict)
 

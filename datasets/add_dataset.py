@@ -64,7 +64,7 @@ if __name__ == "__main__":
             sys.stdout.write("\033[K\rWriting row #{}: {}".format(i, id_val))
 
             c.execute('''INSERT OR IGNORE INTO data (filename, contents) VALUES (:filename, :contents)''',
-                      {"filename": dataset_id, "contents": pickletools.optimize(pickle.dumps(row))})
+                      {"filename": dataset_id, "contents": pickle.dumps(row)})
 
             i += 1
 

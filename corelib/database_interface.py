@@ -8,6 +8,7 @@ import threading
 
 
 database = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../datasets/datasets.sql")
+translations = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../datasets/translations.json")
 
 
 class ThreadLocalConnection(threading.local):
@@ -37,7 +38,11 @@ def iterate_over_file(dataset_name):
 
         ident = res[0]
 
-        contents = pickle.loads(res[1])
+        try:
+            contents = pickle.loads(res[1], encoding='utf8', errors="ignore")
+        except UnicodeDecodeError:
+            print("The ****in decoder don't work")
+            continue
 
         yield (ident, contents)
 
@@ -57,7 +62,7 @@ def lookup_id(dataset_name, id):
     if (res is None):
         return ValueError("No id found")
 
-    contents = pickle.loads(res[0])
+    contents = pickle.loads(res[0], encoding='utf8', errors="ignore")
 
     return contents
 
@@ -69,7 +74,7 @@ def create_iindex_database(dataset_id, clean=False):
 
     if clean:
         cursor.execute('''DELETE FROM iindex WHERE file_id = :file_id''',
-                       {"file_id": dataset_name})
+                       {"file_id": dataset_id})
 
     tlc.connection.commit()
 
@@ -80,7 +85,7 @@ def add_to_iindex_database(dataset_id, document_ids, clean=False):
     doclist = list(document_ids)
 
     cursor.execute('''INSERT OR REPLACE INTO iindex (file_id, contents) VALUES(:file_id, :contents)''',
-                   {"file_id": dataset_id, "contents": pickletools.optimize(pickle.dumps(doclist))})
+                   {"file_id": dataset_id, "contents": pickle.dumps(doclist)})
 
     return cursor.lastrowid
 

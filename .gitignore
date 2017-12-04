@@ -103,3 +103,4 @@ ENV/
 datasets/*.csv
 datasets/*.sql
 datasets/*.tar.gz
+*.bak
