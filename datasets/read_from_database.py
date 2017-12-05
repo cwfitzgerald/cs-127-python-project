@@ -1,5 +1,5 @@
 import sys
-import pickle
+import json
 import sqlite3
 import pprint
 
@@ -11,6 +11,6 @@ results = cursor.fetchall()
 
 if results:
     for r in results:
-        pprint.pprint([str(x).replace("\\n", "\n") for x in pickle.loads(r[2])])
+        pprint.pprint([str(x).replace("\\n", "\n") for x in json.loads(r[2])])
 else:
     print("None found.")

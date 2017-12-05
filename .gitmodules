@@ -1,0 +1,3 @@
+[submodule "third-party/sparsehash"]
+	path = third-party/sparsehash
+	url = git@github.com:sparsehash/sparsehash.git

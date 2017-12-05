@@ -39,7 +39,7 @@ def iterate_over_file(dataset_name):
         ident = res[0]
 
         try:
-            contents = pickle.loads(res[1], encoding='utf8', errors="ignore")
+            contents = json.loads(res[1])
         except UnicodeDecodeError:
             print("The ****in decoder don't work")
             continue
@@ -62,7 +62,7 @@ def lookup_id(dataset_name, id):
     if (res is None):
         return ValueError("No id found")
 
-    contents = pickle.loads(res[0], encoding='utf8', errors="ignore")
+    contents = json.loads(res[0], encoding='utf8', errors="ignore")
 
     return contents
 
@@ -85,7 +85,7 @@ def add_to_iindex_database(dataset_id, document_ids, clean=False):
     doclist = list(document_ids)
 
     cursor.execute('''INSERT OR REPLACE INTO iindex (file_id, contents) VALUES(:file_id, :contents)''',
-                   {"file_id": dataset_id, "contents": pickle.dumps(doclist)})
+                   {"file_id": dataset_id, "contents": pickle.json(doclist)})
 
     return cursor.lastrowid
 

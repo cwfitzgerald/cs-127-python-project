@@ -46,7 +46,7 @@ def iindex_build_csv(filename):
     db.create_iindex_database(dataset_id, True)
 
     # Go through each row in the csv
-    for ident, row in db.iterate_over_file(filename):
+    for ident, row in itertools.islice(db.iterate_over_file(filename), 0, 250):
         sys.stdout.write("Adding iindex nodes for {}:{}: ".format(filename, ident))
         # If data_columns is None (the default) we want all columns but the
         # document_column to be used as a key. We get an array of the contents.
