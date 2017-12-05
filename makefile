@@ -4,7 +4,7 @@ FLAGS=-g -fPIC -isystem third-party -isystem third-party/sparsehash/src -std=c++
 all: datasets/libdatabase.so
 
 datasets/libdatabase.so: datasets/database.cpp
-	$(CXX) $(WARNINGS) $(FLAGS) -shared -o datasets/libdatabase.so datasets/database.cpp -lsqlite3 -lpthread
+	$(CXX) $(WARNINGS) $(FLAGS) -shared -o datasets/libdatabase.so datasets/database.cpp -lsqlite3 -lpthread -licuio -licui18n -licuuc -licudata
 
 clean:
 	rm -f datasets/libdatabase.so
