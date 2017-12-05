@@ -53,7 +53,7 @@ if __name__ == "__main__":
         if (delete):
             c.execute('''DELETE FROM data WHERE filename = :id''', {"id": dataset_id})
 
-        csv_reader = csv.reader(open(filename, encoding="utf8", errors="ignore"))
+        csv_reader = csv.reader(open(filename, encoding="utf8", errors="backslashreplace"))
         csv_reader.__next__()  # Skip header
 
         i = 0

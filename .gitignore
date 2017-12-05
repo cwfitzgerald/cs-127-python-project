@@ -103,4 +103,5 @@ ENV/
 datasets/*.csv
 datasets/*.sql
 datasets/*.tar.gz
+datasets/translations.json
 *.bak
