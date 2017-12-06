@@ -1,5 +1,7 @@
+import argparse
 import corelib.add_dataset
 import corelib.database_interface as db
+import corelib.util as util
 import enum
 import json
 import os
@@ -12,9 +14,12 @@ packages_needed_osx = ['sqlite3', 'icu4c']
 packages_needed_linux = ['libsqlite3-dev', 'libicu-dev', 'make', 'g++', 'rsync']
 
 
+def section_title(title):
+    print("\u001b[37;1m{}\u001b[0m".format(title))
+
+
 def status(name, success):
-    return print("\t{} -- {}".format(name,
-                                     "\u001b[32;1mSuccess\u001b[0m" if success else "\u001b[31;1mFailure\u001b[0m"))
+    print("\t{} -- {}".format(name, "\u001b[32;1mSuccess\u001b[0m" if success else "\u001b[31;1mFailure\u001b[0m"))
 
 
 def error(text):
@@ -23,7 +28,7 @@ def error(text):
 
 
 def check_python_version():
-    print("Checking python version:")
+    section_title("Checking python version:")
 
     success = sys.version_info.major == 3 and sys.version_info.minor >= 5
     name = "{}.{}".format(sys.version_info.major, sys.version_info.minor)
@@ -34,7 +39,7 @@ def check_python_version():
 
 
 def check_python_modules():
-    print("Checking python modules:")
+    section_title("Checking python modules:")
 
     successes = {}
     for module in python_modules_needed:
@@ -57,7 +62,7 @@ def check_system_packages():
 
 
 def _check_system_packages_linux():
-    print("Checking system packages:")
+    section_title("Checking system packages:")
     dpkg_query = subprocess.run(['dpkg-query', '--list'], stdout=subprocess.PIPE)
 
     names = [row.split()[1].partition(':')[0]
@@ -74,7 +79,7 @@ def _check_system_packages_linux():
 
 
 def _check_system_packages_osx():
-    print("Checking system packages:")
+    section_title("Checking system packages:")
     brew_query = subprocess.run(['brew', 'list'], stdout=subprocess.PIPE)
 
     names = [row for row in brew_query.stdout.decode('utf8').split('\n')]
@@ -90,7 +95,7 @@ def _check_system_packages_osx():
 
 
 def check_submodules():
-    print("Checking submodules:")
+    section_title("Checking submodules:")
     submodule_status = subprocess.run(['git', 'submodule', 'status', '--recursive'], stdout=subprocess.PIPE)
 
     successes = {row.split()[1]: row[0] == ' '
@@ -104,7 +109,7 @@ def check_submodules():
 
 
 def run_make():
-    print("Building libdatabase.so:")
+    section_title("Building all code:")
     make_ret = subprocess.run(['make', 'OPTIMIZATION=-O3'])
 
     status("libdatabase.so", make_ret.returncode == 0)
@@ -137,7 +142,7 @@ def print_csv_status(name, status):
 
 
 def check_list_of_csvs(mb_limit):
-    print("Checking status of CSVs")
+    section_title("Checking status of CSVs")
 
     byte_limit = 1024 * 1024 * mb_limit
 
@@ -148,7 +153,7 @@ def check_list_of_csvs(mb_limit):
 
     res = {}
     for csv in settings:
-        if settings[csv]["size"] > byte_limit:
+        if mb_limit != 0 and settings[csv]["size"] > byte_limit:
             res[csv] = CSVStatus.IGNORE
         elif db.data_rows(csv) != 0:
             res[csv] = CSVStatus.INDB
@@ -171,14 +176,14 @@ def download_csv(csv_list):
     if CSVStatus.MISSING not in csv_list.values():
         return
 
-    print("Downloading CSVs:")
+    section_title("Downloading CSVs:")
 
     prefix = 'www.static.connorwfitzgerald.com/csv_cache/'
 
     files = [prefix + os.path.splitext(name)[0] + ".tar.gz"
              for name, status in csv_list.items()
              if status == CSVStatus.MISSING]
-    wget = subprocess.run(['wget', '--continue', '-P', 'datasets' '', *files])
+    wget = subprocess.run(['wget', '--continue', '-q', '--show-progress', '-P', 'datasets' '', *files])
 
     for name, result in csv_list.items():
         if result == CSVStatus.MISSING:
@@ -190,7 +195,7 @@ def unzip_csv(csv_list):
     if CSVStatus.ZIPPED not in csv_list.values():
         return
 
-    print("Unzipping CSVs:")
+    section_title("Unzipping CSVs:")
 
     for name, status in csv_list.items():
         if status == CSVStatus.ZIPPED:
@@ -215,7 +220,7 @@ def build_data_table(csv_list):
     if (CSVStatus.OK not in csv_list.values()):
         return
 
-    print("Adding CSVs to database:")
+    section_title("Adding CSVs to database:")
 
     corelib.add_dataset.add_csv_to_database([os.path.join("datasets/", name)
                                              for name, status in csv_list.items()
@@ -233,26 +238,124 @@ def build_iindex_tables(csv_list):
     if not any(csv_need_insertion):
         return
 
-    print("Building iindex tables:")
+    section_title("Building iindex tables:")
 
     for name, insert in zip(csv_list, csv_need_insertion):
         if insert:
             db.build_iindex_database(name)
 
 
+def remove_file(name, exists=None):
+    if (exists is None):
+        exists = os.path.isfile(name)
+    if (exists):
+        os.remove(name)
+
+    print("\t{} -- {}".format(os.path.relpath(name),
+                              "\u001b[32;1mSuccess\u001b[0m" if exists else "\u001b[31;1mDoesn't Exist\u001b[0m"))
+
+
+def clean_code():
+    section_title("Cleaning All Code:")
+
+    remove_file(util.relative_path(__file__, "corelib/libdatabase.so"))
+
+
+def clean_db():
+    section_title("Cleaning Database:")
+
+    db_path = util.relative_path(__file__, "datasets/datasets.sql")
+    if (os.stat(db_path).st_size != 0):
+        remove_file(db_path)
+    else:
+        remove_file(db_path, False)
+    remove_file(util.relative_path(__file__, "datasets/translations.json"))
+
+
+def clean_downloads():
+    section_title("Cleaning Downloaded Files:")
+
+    csvs = [file for file in os.listdir("datasets") if file.endswith(".csv")]
+    tars = [file for file in os.listdir("datasets") if file.endswith(".tar.gz")]
+
+    for csv in csvs:
+        remove_file(os.path.join("datasets/", csv))
+    for tar in tars:
+        remove_file(os.path.join("datasets/", tar))
+
+
 def main():
-    print("Search Engine Setup Coordinator")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--build', help="Build database and all code (default)", action="store_true")
+    parser.add_argument('--build-code', help="Build all code (default)", action="store_true")
+    parser.add_argument('--clean', '--clean-db', help="Remove the database", action="store_true")
+    parser.add_argument('--clean-code', help="Clean all code", action="store_true")
+    parser.add_argument('--clean-downloads', help="Clean all downloaded/unpacked files", action="store_true")
+    parser.add_argument('--clean-all', help="Clean EVERYTHING", action="store_true")
+    parser.add_argument('--download', help="Download csvs", action="store_true")
+    parser.add_argument('--max', '--max-csv-size',
+                        help="Maximum csv size in megabytes to add to database, 0 for none: (default 200",
+                        type=float, default=20)
+    arguments = parser.parse_args()
+
+    maxsize = arguments.max
+
+    flag_build_code = False
+    flag_build_db = False
+    flag_clean_code = False
+    flag_clean_db = False
+    flag_clean_downloads = False
+    flag_download = False
+
+    if (arguments.build_code):
+        flag_build_code = True
+    if (arguments.clean):
+        flag_clean_db = True
+    if (arguments.clean_code):
+        flag_clean_code = True
+    if (arguments.clean_downloads):
+        flag_clean_downloads = True
+    if (arguments.clean_all):
+        flag_clean_db = True
+        flag_clean_code = True
+        flag_clean_downloads = True
+    if (arguments.download):
+        flag_download = True
+    if (arguments.build or not any([flag_build_code, flag_build_db, flag_clean_code,
+                                    flag_clean_db, flag_clean_downloads, flag_download])):
+        flag_build_code = True
+        flag_download = True
+        flag_build_db = True
+
+    section_title("Search Engine Setup Coordinator")
     check_python_version()
-    check_python_modules()
-    check_system_packages()
-    check_submodules()
-    run_make()
-    csv_list = check_list_of_csvs(200)
-    download_csv(csv_list)
-    unzip_csv(csv_list)
-    csv_list = csv_cull(csv_list)
-    build_data_table(csv_list)
-    build_iindex_tables(csv_list)
+    if (flag_clean_downloads):
+        clean_downloads()
+    if (flag_clean_db):
+        clean_db()
+    if (flag_clean_code):
+        clean_code()
+
+    if (flag_build_code):
+        check_python_modules()
+        check_system_packages()
+        check_submodules()
+        run_make()
+
+    if (flag_download or flag_build_db):
+        csv_list = check_list_of_csvs(maxsize)
+
+    if (flag_download):
+        download_csv(csv_list)
+        unzip_csv(csv_list)
+
+    if (flag_build_db):
+        csv_list = csv_cull(csv_list)
+        build_data_table(csv_list)
+        build_iindex_tables(csv_list)
+        section_title("Database built - ready for use")
+
+    print("\u001b[32;1mComplete!\u001b[0m")
 
 
 if __name__ == "__main__":

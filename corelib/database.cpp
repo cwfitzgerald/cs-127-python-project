@@ -1,6 +1,9 @@
+#include <atomic>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <future>
+#include <iomanip>
 #include <iostream>
 #include <json.hpp>
 #include <locale>
@@ -18,6 +21,7 @@
 #include <vector>
 
 using namespace std::string_literals;
+using namespace std::chrono_literals;
 using json = nlohmann::json;
 
 class dense_set_wrapper : public google::dense_hash_set<int> {
@@ -80,9 +84,11 @@ class dictionary_creator : public std::vector<translation_storage_type> {
 	}
 };
 
-dictionary_build_type build_iindex_database_impl(const char* filename, int dataset_id,
-                                                 const std::vector<int>& data_columns, std::size_t threads,
-                                                 std::size_t offset) {
+std::atomic<std::size_t> threads_done;
+std::atomic<std::size_t> rows_finished;
+
+dictionary_build_type build_iindex_database_impl(int dataset_id, const std::vector<int>& data_columns,
+                                                 std::size_t threads, std::size_t offset) {
 
 	UErrorCode regex_status = U_ZERO_ERROR;
 	auto matcher = std::make_unique<icu::RegexMatcher>("\\p{Letter}+", 0, regex_status);
@@ -120,7 +126,7 @@ dictionary_build_type build_iindex_database_impl(const char* filename, int datas
 			continue;
 		}
 
-		auto starting_size = dictionary.size();
+		// auto starting_size = dictionary.size();
 
 		uint64_t key_count = 0;
 		for (int column : data_columns) {
@@ -143,14 +149,18 @@ dictionary_build_type build_iindex_database_impl(const char* filename, int datas
 				key_count++;
 			}
 		}
-		auto ending_size = dictionary.size();
-		std::cout << "Adding iindex nodes for " << filename << " " << id << ": " << key_count << " added. "
-		          << ending_size << " total. Diff: " << ending_size - starting_size << '\n';
+
+		rows_finished += 1;
+		// auto ending_size = dictionary.size();
+		// std::cout << "Adding iindex nodes for " << filename << " " << id << ": " << key_count << " added. "
+		//           << ending_size << " total. Diff: " << ending_size - starting_size << '\n';
 	}
 
 	sqlite3_finalize(find_all_content);
 
 	sqlite3_close(database);
+
+	threads_done += 1;
 
 	return dictionary;
 }
@@ -170,7 +180,8 @@ dictionary_build_type merge_dictionaries(std::vector<dictionary_build_type>& dic
 	return dict;
 }
 
-google::dense_hash_map<std::string, int64_t> add_iindex_to_database(int dataset_id, dictionary_build_type& dict) {
+google::dense_hash_map<std::string, int64_t> add_iindex_to_database(const char* filename, int dataset_id,
+                                                                    dictionary_build_type& dict) {
 	google::dense_hash_map<std::string, int64_t> ret;
 	ret.set_empty_key(""s);
 
@@ -194,6 +205,10 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(int dataset_
 	sqlite3_step(begin_statement);
 	sqlite3_step(delete_statement);
 
+	auto total_indices = dict.size();
+
+	auto last_print = std::chrono::high_resolution_clock::now();
+
 	int i = 0;
 	for (auto& p : dict) {
 		auto key = p.first;
@@ -213,12 +228,17 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(int dataset_
 
 		ret[key] = current_id;
 
-		if (i++ % 1000 == 0) {
-			std::cout << "\033[K\rAdding Key: " << key << " -> " << current_id << " -> " << value.size()
-			          << " documents";
+		auto cur_time = std::chrono::high_resolution_clock::now();
+		bool print = i == 0 || cur_time - last_print > 20ms;
+		if (print) {
+			last_print = cur_time;
+			std::cout << "\r\033[K\r\t" << filename << " -- Row " << i << '/' << total_indices << ": "
+			          << std::setprecision(0) << std::round((double(i) / double(total_indices)) * 100) << "%";
 		}
+		++i;
 	}
-	std::cout << '\n';
+	std::cout << "\r\033[K\r\t" << filename
+	          << " -- \u001b[32;1mInverse Index Added to DB\u001b[0m Rows: " << total_indices << '\n';
 
 	sqlite3_step(commit_statement);
 
@@ -231,8 +251,6 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(int dataset_
 }
 
 extern "C" void build_iindex_database(const char* filename) {
-	std::cout << filename << '\n';
-
 	///////////////////
 	// LOAD SETTINGS //
 	///////////////////
@@ -248,13 +266,20 @@ extern "C" void build_iindex_database(const char* filename) {
 	// CREATE AND CALL THREADS //
 	/////////////////////////////
 	auto threads = std::thread::hardware_concurrency();
+	threads_done = 0;
+	rows_finished = 0;
 
 	std::vector<std::future<dictionary_build_type>> future_list;
 	future_list.reserve(threads);
 
 	for (std::size_t i = 0; i < threads; ++i) {
-		future_list.emplace_back(std::async(std::launch::async, build_iindex_database_impl, filename, dataset_id,
-		                                    std::ref(data_columns), threads, i));
+		future_list.emplace_back(
+		    std::async(std::launch::async, build_iindex_database_impl, dataset_id, std::ref(data_columns), threads, i));
+	}
+
+	while (threads_done != threads) {
+		std::cout << "\r\033[K\r\t" << filename << " -- Adding Row #" << rows_finished;
+		std::this_thread::sleep_for(20ms);
 	}
 
 	/////////////////
@@ -268,17 +293,20 @@ extern "C" void build_iindex_database(const char* filename) {
 	}
 
 	// Merge answers into one dictionary
+	std::cout << "\r\033[K\r\t" << filename << " -- Merging Dictionaries...";
 	auto final_dict = merge_dictionaries(answer_list);
-	std::cout << "Total Length: " << final_dict.size() << '\n';
+	std::cout << "\r\033[K\r\t" << filename << " -- \u001b[32;1mDictionary Built\u001b[0m Rows: " << final_dict.size()
+	          << '\n';
 
 	/////////////////////
 	// ADD TO DATABASE //
 	/////////////////////
-	auto translation = add_iindex_to_database(dataset_id, final_dict);
+	auto translation = add_iindex_to_database(filename, dataset_id, final_dict);
 
 	///////////////////////////////
 	// Save Translations to JSON //
 	///////////////////////////////
+	std::cout << "\r\033[K\r\t" << filename << " -- Adding translations to translations.json";
 	std::fstream json_translation_file("datasets/translations.json");
 
 	json translation_json;
@@ -294,6 +322,8 @@ extern "C" void build_iindex_database(const char* filename) {
 	std::ofstream json_translation_file_out("datasets/translations.json", std::fstream::out | std::fstream::trunc);
 
 	json_translation_file_out << std::setw(4) << translation_json;
+
+	std::cout << "\r\033[K\r\t" << filename << " -- \u001b[32;1mAdded Translations\u001b[0m to translations.json\n";
 }
 
 extern "C" int translate_string(int dataset_id, const char* search_term) {
