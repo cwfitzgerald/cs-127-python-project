@@ -1,3 +1,5 @@
+import corelib.add_dataset
+import corelib.database_interface as db
 import enum
 import json
 import os
@@ -6,7 +8,8 @@ import sys
 import tarfile
 
 python_modules_needed = ['anytree', 'flask']
-packages_needed = ['libsqlite3-dev', 'libicu-dev', 'make', 'g++', 'rsync']
+packages_needed_osx = ['sqlite3', 'icu4c']
+packages_needed_linux = ['libsqlite3-dev', 'libicu-dev', 'make', 'g++', 'rsync']
 
 
 def status(name, success):
@@ -42,23 +45,48 @@ def check_python_modules():
         status(name, result)
 
     if (False in successes.values()):
-        error("Please install {}".format(" ".join([name for name, result in successes.items() if not result])))
+        error("Please run 'pip install {}'".format(" ".join([name for name, result in successes.items()
+                                                             if not result])))
 
 
 def check_system_packages():
+    if sys.platform.startswith('linux'):
+        _check_system_packages_linux()
+    elif sys.platform.startswith('darwin'):
+        _check_system_packages_osx()
+
+
+def _check_system_packages_linux():
     print("Checking system packages:")
     dpkg_query = subprocess.run(['dpkg-query', '--list'], stdout=subprocess.PIPE)
 
     names = [row.split()[1].partition(':')[0]
              for row in dpkg_query.stdout.decode('utf8').split('\n')[5:] if len(row) >= 2]
 
-    successes = {package: package in names for package in packages_needed}
+    successes = {package: package in names for package in packages_needed_linux}
 
     for name, result in sorted(successes.items()):
         status(name, result)
 
     if (False in successes.values()):
-        error("Please install {}".format(" ".join([name for name, result in successes.items() if not result])))
+        error("Please run 'sudo apt install {}'".format(" ".join([name for name, result in successes.items()
+                                                                  if not result])))
+
+
+def _check_system_packages_osx():
+    print("Checking system packages:")
+    brew_query = subprocess.run(['brew', 'list'], stdout=subprocess.PIPE)
+
+    names = [row for row in brew_query.stdout.decode('utf8').split('\n')]
+
+    successes = {package: package in names for package in packages_needed_osx}
+
+    for name, result in sorted(successes.items()):
+        status(name, result)
+
+    if (False in successes.values()):
+        error("Please run 'brew install {}'".format(" ".join([name for name, result in successes.items()
+                                                              if not result])))
 
 
 def check_submodules():
@@ -90,11 +118,14 @@ class CSVStatus(enum.Enum):
     MISSING = 2
     ZIPPED = 3
     IGNORE = 4
+    INDB = 5
 
 
 def print_csv_status(name, status):
     if (status == CSVStatus.OK):
         status_msg = "\u001b[32;1mFound"
+    elif (status == CSVStatus.INDB):
+        status_msg = "\u001b[32;1mIn Database"
     elif (status == CSVStatus.MISSING):
         status_msg = "\u001b[31;1mMissing"
     elif (status == CSVStatus.ZIPPED):
@@ -125,6 +156,8 @@ def check_list_of_csvs(mb_limit):
             res[csv] = CSVStatus.ZIPPED if tar_usable else CSVStatus.MISSING
         elif settings[csv]["size"] > byte_limit:
             res[csv] = CSVStatus.IGNORE
+        elif db.data_rows(csv) != 0:
+            res[csv] = CSVStatus.INDB
         else:
             res[csv] = CSVStatus.OK
 
@@ -169,7 +202,42 @@ def unzip_csv(csv_list):
 
             file.extractall(".")
 
+            csv_list[name] = CSVStatus.OK
+
             print("\u001b[32;1mSuccess\u001b[0m")
+
+
+def csv_cull(csv_list):
+    return {name: status for name, status in csv_list.items() if status in (CSVStatus.OK, CSVStatus.INDB)}
+
+
+def build_data_table(csv_list):
+    if (CSVStatus.OK not in csv_list.values()):
+        return
+
+    print("Adding CSVs to database:")
+
+    corelib.add_dataset.add_csv_to_database([os.path.join("datasets/", name)
+                                             for name, status in csv_list.items()
+                                             if status == CSVStatus.OK],
+                                            delete=True)
+
+    for name, status in csv_list.items():
+        if status == CSVStatus.OK:
+            csv_list[name] = CSVStatus.INDB
+
+
+def build_iindex_tables(csv_list):
+    csv_need_insertion = [db.iindex_rows(name) == 0 for name in csv_list]
+
+    if not any(csv_need_insertion):
+        return
+
+    print("Building iindex tables:")
+
+    for name, insert in zip(csv_list, csv_need_insertion):
+        if insert:
+            db.build_iindex_database(name)
 
 
 def main():
@@ -182,6 +250,9 @@ def main():
     csv_list = check_list_of_csvs(200)
     download_csv(csv_list)
     unzip_csv(csv_list)
+    csv_list = csv_cull(csv_list)
+    build_data_table(csv_list)
+    build_iindex_tables(csv_list)
 
 
 if __name__ == "__main__":

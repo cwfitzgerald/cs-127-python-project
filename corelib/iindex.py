@@ -20,7 +20,14 @@ import re
 import sys
 
 
-def iindex_build_csv(filename):
+def iindex_search(search_term):
+    '''
+    inputs: search_term     - a string telling what to search for
+    output: a set of all resulting document name
+    '''
+
+
+def OLD_SIGSEGV_iindex_build_csv(filename):
     '''
     inputs: filename        - csv to inspect
             document_column - column of csv to use as the name of the "document"
@@ -119,59 +126,6 @@ def iindex_build_csv(filename):
     db.commit()
 
     return d
-
-
-def iindex_search(dictionary, search_term, split=None, filt=None):
-    '''
-    inputs: dictionary      - generated inverted index
-            search_term     - a string or a list of strings telling what to search for
-            split           - character to split search_terms by
-            filt            - function that will be called on each search term
-                              string -> string
-    output: a set of all result document name
-    '''
-
-    # If we aren't passed a list, make search_term a list of one
-    if not isinstance(search_term, list):
-        search_term = [search_term]
-
-    # If we have a function to split by, apply the split
-    if not (split is None):
-        # Apply the split
-        array_of_split_search_terms = [search.split() for search in search_term]
-
-        # Flatten the list of lists into a single 1D list
-        search_term = itertools.chain.from_iterable(array_of_split_search_terms)
-
-    # Apply the filter to each search term
-    if not (filt is None):
-        search_term = map(filt, search_term)
-
-    # Ensure search_term is a list for...reasons
-    search_term = list(search_term)
-
-    # Single searches need special treatment due to array vs non-array problems
-    if len(search_term) > 1:
-        # Get a list of the sets that match each search term
-        result_sets = operator.itemgetter(*search_term)(dictionary)
-
-        # Reduce the list of sets over operator binary-and
-        # Explaination:
-        # A reduction (or fold) is a higher older function that combines every element in a list
-        # by calling the function on two elements at a time.
-        # A sum of a list is an example of a reduction using operator.plus
-        #
-        # Calling operator binary-and on two sets produces a new set that contains
-        # all elements that both share (Intersection for Stats people). By doing this over
-        # a large list of sets, I will find only the documents that have matches for every single
-        # search term
-        unique_results = functools.reduce(operator.and_, result_sets)
-
-        # Turn the unique results into a set and return it
-        return set(unique_results)
-    else:
-        # If there is only a single search term, find the set of results for the term and return it
-        return dictionary[search_term[0]]
 
 
 if __name__ == "__main__":
