@@ -148,16 +148,16 @@ def check_list_of_csvs(mb_limit):
 
     res = {}
     for csv in settings:
-        if csv not in csvs:
+        if settings[csv]["size"] > byte_limit:
+            res[csv] = CSVStatus.IGNORE
+        elif db.data_rows(csv) != 0:
+            res[csv] = CSVStatus.INDB
+        elif csv not in csvs:
             tar_wo_extent = os.path.splitext(csv)[0]
             tar_full_path = os.path.join("datasets/", tar_wo_extent + ".tar.gz")
             tar_usable = (tar_wo_extent in tars) and (os.stat(tar_full_path).st_size == settings[csv]["tar_size"])
 
             res[csv] = CSVStatus.ZIPPED if tar_usable else CSVStatus.MISSING
-        elif settings[csv]["size"] > byte_limit:
-            res[csv] = CSVStatus.IGNORE
-        elif db.data_rows(csv) != 0:
-            res[csv] = CSVStatus.INDB
         else:
             res[csv] = CSVStatus.OK
 

@@ -247,8 +247,7 @@ extern "C" void build_iindex_database(const char* filename) {
 	/////////////////////////////
 	// CREATE AND CALL THREADS //
 	/////////////////////////////
-	// auto threads = std::thread::hardware_concurrency();
-	auto threads = 1;
+	auto threads = std::thread::hardware_concurrency();
 
 	std::vector<std::future<dictionary_build_type>> future_list;
 	future_list.reserve(threads);
