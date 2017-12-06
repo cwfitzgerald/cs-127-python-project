@@ -2,6 +2,8 @@
 	"offenders.csv":{
 		"name": "offenders.csv",
 		"id": 0,
+		"tar_size": 81768,
+		"size": 234124,
 		"description": "Last words of Texas Death Row Inmates",
 		"headers": ["Execution #", "Last Name", "First Name", "TDCJ Number", "Age", "Date", "Race", "County", "Last Statement"],
 		"document_column": 0,
@@ -10,6 +12,8 @@
 	"gutenberg.csv":{
 		"name": "gutenberg.csv",
 		"id": 1,
+		"tar_size": 4993647686,
+		"size": 13301759134,
 		"description": "Entire corpus of Project Gutenberg",
 		"headers": ["Number","Title","Author","Language","String"],
 		"document_column": 0,

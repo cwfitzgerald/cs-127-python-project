@@ -1,8 +1,12 @@
-import sys
+import enum
+import json
+import os
 import subprocess
+import sys
+import tarfile
 
 python_modules_needed = ['anytree', 'flask']
-packages_needed = ['libsqlite3-dev', 'libicu-dev', 'make', 'g++']
+packages_needed = ['libsqlite3-dev', 'libicu-dev', 'make', 'g++', 'rsync']
 
 
 def status(name, success):
@@ -23,7 +27,7 @@ def check_python_version():
     status(name, success)
 
     if (not success):
-        error("Please install python3.5 or greater")
+        error("Please install Python 3.5 or greater")
 
 
 def check_python_modules():
@@ -68,7 +72,7 @@ def check_submodules():
         status(name, result)
 
     if (False in successes.values()):
-        error("Please run git 'submodule update --init --recursive'")
+        error("Please run 'git submodule update --init --recursive'")
 
 
 def run_make():
@@ -81,6 +85,93 @@ def run_make():
         error("Make failed.")
 
 
+class CSVStatus(enum.Enum):
+    OK = 1
+    MISSING = 2
+    ZIPPED = 3
+    IGNORE = 4
+
+
+def print_csv_status(name, status):
+    if (status == CSVStatus.OK):
+        status_msg = "\u001b[32;1mFound"
+    elif (status == CSVStatus.MISSING):
+        status_msg = "\u001b[31;1mMissing"
+    elif (status == CSVStatus.ZIPPED):
+        status_msg = "\u001b[33;1mZipped"
+    elif (status == CSVStatus.IGNORE):
+        status_msg = "\u001b[31mToo Big"
+
+    print("\t{} -- {}\u001b[0m".format(name, status_msg))
+
+
+def check_list_of_csvs(mb_limit):
+    print("Checking status of CSVs")
+
+    byte_limit = 1024 * 1024 * mb_limit
+
+    settings = json.load(open("datasets/index.json"))
+
+    csvs = [os.path.basename(file) for file in os.listdir("datasets") if file.endswith(".csv")]
+    tars = [os.path.basename(file)[:-7] for file in os.listdir("datasets") if file.endswith(".tar.gz")]
+
+    res = {}
+    for csv in settings:
+        if csv not in csvs:
+            tar_wo_extent = os.path.splitext(csv)[0]
+            tar_full_path = os.path.join("datasets/", tar_wo_extent + ".tar.gz")
+            tar_usable = (tar_wo_extent in tars) and (os.stat(tar_full_path).st_size == settings[csv]["tar_size"])
+
+            res[csv] = CSVStatus.ZIPPED if tar_usable else CSVStatus.MISSING
+        elif settings[csv]["size"] > byte_limit:
+            res[csv] = CSVStatus.IGNORE
+        else:
+            res[csv] = CSVStatus.OK
+
+    for name, result in res.items():
+        print_csv_status(name, result)
+
+    return res
+
+
+def download_csv(csv_list):
+    if CSVStatus.MISSING not in csv_list.values():
+        return
+
+    print("Downloading CSVs:")
+
+    prefix = 'www.static.connorwfitzgerald.com/csv_cache/'
+
+    files = [prefix + os.path.splitext(name)[0] + ".tar.gz"
+             for name, status in csv_list.items()
+             if status == CSVStatus.MISSING]
+    wget = subprocess.run(['wget', '--continue', '-P', 'datasets' '', *files])
+
+    for name, result in csv_list.items():
+        if result == CSVStatus.MISSING:
+            csv_list[name] = CSVStatus.ZIPPED
+            status(name, True)
+
+
+def unzip_csv(csv_list):
+    if CSVStatus.ZIPPED not in csv_list.values():
+        return
+
+    print("Unzipping CSVs:")
+
+    for name, status in csv_list.items():
+        if status == CSVStatus.ZIPPED:
+            sys.stdout.write("\t{}... ".format(name))
+            sys.stdout.flush()
+            tar_loc = os.path.join("datasets/", os.path.splitext(name)[0] + ".tar.gz")
+
+            file = tarfile.open(tar_loc, 'r')
+
+            file.extractall(".")
+
+            print("\u001b[32;1mSuccess\u001b[0m")
+
+
 def main():
     print("Search Engine Setup Coordinator")
     check_python_version()
@@ -88,6 +179,10 @@ def main():
     check_system_packages()
     check_submodules()
     run_make()
+    csv_list = check_list_of_csvs(200)
+    download_csv(csv_list)
+    unzip_csv(csv_list)
+
 
 if __name__ == "__main__":
     main()
