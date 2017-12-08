@@ -113,8 +113,6 @@ dictionary_build_type build_iindex_database_impl(int dataset_id, const std::vect
 			continue;
 		}
 
-		// auto starting_size = dictionary.size();
-
 		uint64_t key_count = 0;
 		for (int column : data_columns) {
 			std::string coldata = data_json[column];
@@ -169,14 +167,10 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(const char* 
 	ret.set_empty_key(""s);
 
 	sqlite3* database;
-	sqlite3_stmt* delete_statement;
 	sqlite3_stmt* begin_statement;
 	sqlite3_stmt* commit_statement;
 	sqlite3_stmt* add_statement;
 	sqlite3_open("datasets/datasets.sql", &database);
-
-	sqlite3_prepare_v2(database, "DELETE FROM iindex WHERE file_id = :fild_id", -1, &delete_statement, nullptr);
-	sqlite3_bind_int(delete_statement, 1, dataset_id);
 
 	sqlite3_prepare_v2(database, "BEGIN", -1, &begin_statement, nullptr);
 	sqlite3_prepare_v2(database, "COMMIT", -1, &commit_statement, nullptr);
@@ -186,7 +180,6 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(const char* 
 	sqlite3_bind_int(add_statement, 1, dataset_id);
 
 	sqlite3_step(begin_statement);
-	sqlite3_step(delete_statement);
 
 	auto total_indices = dict.size();
 
@@ -221,15 +214,17 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(const char* 
 		}
 		++i;
 	}
-	std::cout << "\r\033[K\r\t" << filename
-	          << " -- \u001b[32;1mInverse Index Added to DB\u001b[0m Rows: " << total_indices << '\n';
+
+	std::cout << "\r\033[K\r\t" << filename << " -- Commiting to DB" << std::flush;
 
 	sqlite3_step(commit_statement);
+
+	std::cout << "\r\033[K\r\t" << filename
+	          << " -- \u001b[32;1mInverse Index Added to DB\u001b[0m Rows: " << total_indices << '\n';
 
 	sqlite3_finalize(add_statement);
 	sqlite3_finalize(begin_statement);
 	sqlite3_finalize(commit_statement);
-	sqlite3_finalize(delete_statement);
 
 	return ret;
 }

@@ -52,7 +52,7 @@ def check_python_modules():
         status(name, result)
 
     if (False in successes.values()):
-        error("Please run 'pip install {}'".format(" ".join([name for name, result in successes.items()
+        error("Please run 'pip3 install {}'".format(" ".join([name for name, result in successes.items()
                                                              if not result])))
 
 
@@ -112,7 +112,19 @@ def check_submodules():
 
 def run_make():
     section_title("Building all code:")
-    make_ret = subprocess.run(['make', 'OPTIMIZATION=-O3'])
+
+    if (sys.platform.startswith("darwin")):
+        brew_prefixes = [subprocess.run(['brew', '--prefix', lib], stdout=subprocess.PIPE).stdout.decode('utf8')
+                         for lib in packages_needed_osx]
+
+        brew_includes = ["-isystem " + prefix for prefix in brew_prefixes]
+        brew_links = ["-L" + prefix for prefix in brew_prefixes]
+
+        extraflags = " ".join(brew_includes) + " " + " ".join(brew_links)
+    else:
+        extraflags = ""
+
+    make_ret = subprocess.run(['make', 'OPTIMIZATION=-O3', 'EXTRAFLAGS={}'.format(extraflags)])
 
     status("libdatabase.so", make_ret.returncode == 0)
 
