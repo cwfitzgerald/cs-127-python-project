@@ -114,7 +114,8 @@ def run_make():
     section_title("Building all code:")
 
     if (sys.platform.startswith("darwin")):
-        brew_prefixes = [subprocess.run(['brew', '--prefix', lib], stdout=subprocess.PIPE).stdout.decode('utf8')
+        brew_prefixes = [subprocess.run(['brew', '--prefix', lib],
+                                        stdout=subprocess.PIPE).stdout.decode('utf8').replace('\n', ' ')
                          for lib in packages_needed_osx]
 
         brew_includes = ["-isystem " + prefix for prefix in brew_prefixes]
