@@ -118,8 +118,8 @@ def run_make():
                                         stdout=subprocess.PIPE).stdout.decode('utf8').replace('\n', ' ')
                          for lib in packages_needed_osx]
 
-        brew_includes = ["-isystem " + os.path.join(prefix, "include") for prefix in brew_prefixes]
-        brew_links = ["-L" + os.path.join(prefix, "lib") for prefix in brew_prefixes]
+        brew_includes = ["-isystem " + os.path.join(prefix.strip(), "include") for prefix in brew_prefixes]
+        brew_links = ["-L" + os.path.join(prefix.strip(), "lib") for prefix in brew_prefixes]
 
         extraflags = " ".join(brew_includes) + " " + " ".join(brew_links)
     else:
