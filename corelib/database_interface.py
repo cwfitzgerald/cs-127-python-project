@@ -31,6 +31,7 @@ def setup_dll():
     dll.build_iindex_database.restype = None
     dll.translate_string.argtypes = [ctypes.c_int, ctypes.c_char_p]
     dll.translate_string.restype = ctypes.c_int
+    dll.load_runtime_data.restype = None
 
     return dll
 
@@ -104,7 +105,7 @@ def lookup_id(dataset_name, id):
 
     dataset_id = settings[dataset_name]["id"]
 
-    cursor.execute('''SELECT contents FROM data WHERE filename = :filename and key_ = :id''',
+    cursor.execute('''SELECT contents FROM data WHERE filename = :filename and key = :id''',
                    {"filename": dataset_id})
 
     res = cursor.fetchone()
@@ -115,6 +116,16 @@ def lookup_id(dataset_name, id):
     contents = json.loads(res[0], encoding='utf8', errors="backslashescape")
 
     return contents
+
+
+@util.run_once
+def load_runtime_data():
+    global helper_dll
+    create_tables()
+    if helper_dll is None:
+        helper_dll = setup_dll()
+
+    helper_dll.load_runtime_data()
 
 
 def build_iindex_database(filename):
@@ -129,10 +140,11 @@ def build_iindex_database(filename):
 def translate_string(dataset_id, string):
     global helper_dll
     create_tables()
+    load_runtime_data()
     if helper_dll is None:
         helper_dll = setup_dll()
 
-    res = helper_dll.translate_string(ctypes.c_int(dataset_id), bytes(string))
+    res = helper_dll.translate_string(ctypes.c_int(dataset_id), bytes(string, encoding='utf8'))
 
     if res == -1:
         return None
@@ -142,8 +154,3 @@ def translate_string(dataset_id, string):
 def commit():
     create_tables()
     tlc.connection.commit()
-
-
-if __name__ == "__main__":
-    for ident, content in itertools.islice(iterate_over_file("gutenberg.csv"), 0, 100):
-        print("id: {} - content: {}".format(ident, content[1]))

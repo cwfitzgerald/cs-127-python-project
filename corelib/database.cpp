@@ -71,20 +71,6 @@ namespace google {
 using dictionary_build_type = dense_hash_wrapper;
 using translation_storage_type = google::sparse_hash_map<std::string, int>;
 
-class dictionary_creator : public std::vector<translation_storage_type> {
-  public:
-	dictionary_creator() : std::vector<translation_storage_type>() {
-		std::ifstream f("datasets/translations.json");
-		json j;
-
-		f >> j;
-
-		for (auto it = j.begin(); it != j.end(); ++it) {
-			std::vector<translation_storage_type>::emplace_back(it.value().get<translation_storage_type>());
-		}
-	}
-};
-
 std::atomic<std::size_t> threads_done;
 std::atomic<std::size_t> rows_finished;
 
@@ -226,12 +212,12 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(const char* 
 		ret[key] = current_id;
 
 		auto cur_time = std::chrono::high_resolution_clock::now();
-		bool print = i == 0 || cur_time - last_print > 20ms;
+		bool print = i == 0 || cur_time - last_print > 16ms;
 		if (print) {
 			last_print = cur_time;
 			std::cout << "\r\033[K\r\t" << filename << " -- Row " << i << '/' << total_indices << ": "
-			          << std::setprecision(0) << std::round((double(i) / double(total_indices)) * 100) << "%"
-			          << std::flush;
+			          << std::setprecision(0) << std::fixed << std::round((double(i) / double(total_indices)) * 100)
+			          << "%" << std::flush;
 		}
 		++i;
 	}
@@ -246,6 +232,19 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(const char* 
 	sqlite3_finalize(delete_statement);
 
 	return ret;
+}
+
+static std::vector<translation_storage_type> translation_database;
+
+extern "C" void load_runtime_data() {
+	std::ifstream f("datasets/translations.json");
+	json j;
+
+	f >> j;
+
+	for (auto it = j.begin(); it != j.end(); ++it) {
+		translation_database.emplace_back(it.value().get<translation_storage_type>());
+	}
 }
 
 extern "C" void build_iindex_database(const char* filename) {
@@ -276,6 +275,11 @@ extern "C" void build_iindex_database(const char* filename) {
 		                                    std::ref(data_columns), threads, i, regex.c_str()));
 	}
 
+	/////////////////////////////////
+	// WAIT FOR THREADS TO BE DONE //
+	//   AND PRINT ASYNC PROGRESS  //
+	/////////////////////////////////
+
 	while (threads_done != threads) {
 		std::cout << "\r\033[K\r\t" << filename << " -- Adding Row #" << rows_finished << std::flush;
 		std::this_thread::sleep_for(16ms);
@@ -305,7 +309,7 @@ extern "C" void build_iindex_database(const char* filename) {
 	///////////////////////////////
 	// Save Translations to JSON //
 	///////////////////////////////
-	std::cout << "\r\033[K\r\t" << filename << " -- Adding translations to translations.json";
+	std::cout << "\r\033[K\r\t" << filename << " -- Adding translations to translations.json" << std::flush;
 	std::fstream json_translation_file("datasets/translations.json");
 
 	json translation_json;
@@ -326,9 +330,7 @@ extern "C" void build_iindex_database(const char* filename) {
 }
 
 extern "C" int translate_string(int dataset_id, const char* search_term) {
-	static dictionary_creator dict_list;
-
-	auto&& dict = dict_list[dataset_id];
+	auto&& dict = translation_database[dataset_id];
 
 	auto it = dict.find(search_term);
 	bool found = it != dict.end();

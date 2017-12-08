@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tarfile
 
-python_modules_needed = ['anytree', 'flask']
+python_modules_needed = ['anytree', 'flask', 'cachetools']
 packages_needed_osx = ['sqlite', 'icu4c']
 packages_needed_linux = ['libsqlite3-dev', 'libicu-dev', 'make', 'g++']
 
