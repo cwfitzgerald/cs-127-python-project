@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import corelib.add_dataset
 import corelib.database_interface as db
@@ -10,8 +12,8 @@ import sys
 import tarfile
 
 python_modules_needed = ['anytree', 'flask']
-packages_needed_osx = ['sqlite3', 'icu4c']
-packages_needed_linux = ['libsqlite3-dev', 'libicu-dev', 'make', 'g++', 'rsync']
+packages_needed_osx = ['sqlite', 'icu4c']
+packages_needed_linux = ['libsqlite3-dev', 'libicu-dev', 'make', 'g++']
 
 
 def section_title(title):
@@ -295,7 +297,7 @@ def main():
     parser.add_argument('--download', help="Download csvs", action="store_true")
     parser.add_argument('--max', '--max-csv-size',
                         help="Maximum csv size in megabytes to add to database, 0 for none: (default 200",
-                        type=float, default=20)
+                        type=float, default=100)
     arguments = parser.parse_args()
 
     maxsize = arguments.max

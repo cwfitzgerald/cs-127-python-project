@@ -13,6 +13,7 @@
 #include <sparsehash/sparse_hash_map>
 #include <sparsehash/sparse_hash_set>
 #include <sqlite3.h>
+#include <sys/ioctl.h>
 #include <thread>
 #include <unicode/regex.h>
 #include <unicode/unistr.h>
@@ -88,10 +89,10 @@ std::atomic<std::size_t> threads_done;
 std::atomic<std::size_t> rows_finished;
 
 dictionary_build_type build_iindex_database_impl(int dataset_id, const std::vector<int>& data_columns,
-                                                 std::size_t threads, std::size_t offset) {
+                                                 std::size_t threads, std::size_t offset, const char* regex_string) {
 
 	UErrorCode regex_status = U_ZERO_ERROR;
-	auto matcher = std::make_unique<icu::RegexMatcher>("\\p{Letter}+", 0, regex_status);
+	auto matcher = std::make_unique<icu::RegexMatcher>(regex_string, 0, regex_status);
 
 	if (U_FAILURE(regex_status)) {
 		std::cout << u_errorName(regex_status) << '\n';
@@ -149,11 +150,7 @@ dictionary_build_type build_iindex_database_impl(int dataset_id, const std::vect
 				key_count++;
 			}
 		}
-
 		rows_finished += 1;
-		// auto ending_size = dictionary.size();
-		// std::cout << "Adding iindex nodes for " << filename << " " << id << ": " << key_count << " added. "
-		//           << ending_size << " total. Diff: " << ending_size - starting_size << '\n';
 	}
 
 	sqlite3_finalize(find_all_content);
@@ -233,7 +230,8 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(const char* 
 		if (print) {
 			last_print = cur_time;
 			std::cout << "\r\033[K\r\t" << filename << " -- Row " << i << '/' << total_indices << ": "
-			          << std::setprecision(0) << std::round((double(i) / double(total_indices)) * 100) << "%";
+			          << std::setprecision(0) << std::round((double(i) / double(total_indices)) * 100) << "%"
+			          << std::flush;
 		}
 		++i;
 	}
@@ -261,6 +259,7 @@ extern "C" void build_iindex_database(const char* filename) {
 
 	auto data_columns = settings[filename]["data_columns"].get<std::vector<int>>();
 	auto dataset_id = settings[filename]["id"].get<int>();
+	auto regex = settings[filename]["regex"].get<std::string>();
 
 	/////////////////////////////
 	// CREATE AND CALL THREADS //
@@ -273,13 +272,13 @@ extern "C" void build_iindex_database(const char* filename) {
 	future_list.reserve(threads);
 
 	for (std::size_t i = 0; i < threads; ++i) {
-		future_list.emplace_back(
-		    std::async(std::launch::async, build_iindex_database_impl, dataset_id, std::ref(data_columns), threads, i));
+		future_list.emplace_back(std::async(std::launch::async, build_iindex_database_impl, dataset_id,
+		                                    std::ref(data_columns), threads, i, regex.c_str()));
 	}
 
 	while (threads_done != threads) {
-		std::cout << "\r\033[K\r\t" << filename << " -- Adding Row #" << rows_finished;
-		std::this_thread::sleep_for(20ms);
+		std::cout << "\r\033[K\r\t" << filename << " -- Adding Row #" << rows_finished << std::flush;
+		std::this_thread::sleep_for(16ms);
 	}
 
 	/////////////////
@@ -293,7 +292,7 @@ extern "C" void build_iindex_database(const char* filename) {
 	}
 
 	// Merge answers into one dictionary
-	std::cout << "\r\033[K\r\t" << filename << " -- Merging Dictionaries...";
+	std::cout << "\r\033[K\r\t" << filename << " -- Merging Dictionaries..." << std::flush;
 	auto final_dict = merge_dictionaries(answer_list);
 	std::cout << "\r\033[K\r\t" << filename << " -- \u001b[32;1mDictionary Built\u001b[0m Rows: " << final_dict.size()
 	          << '\n';

@@ -5,7 +5,7 @@ FLAGS=-g -fPIC -isystem third-party -isystem third-party/sparsehash/include -std
 all: corelib/libdatabase.so
 
 corelib/libdatabase.so: corelib/database.cpp
-	$(CXX) $(WARNINGS) $(FLAGS) -shared -o corelib/libdatabase.so corelib/database.cpp -lsqlite3 -lpthread -licuio -licui18n -licuuc -licudata
+	$(CXX) $(WARNINGS) $(FLAGS) -shared -o corelib/libdatabase.so corelib/database.cpp -lsqlite3 -lpthread `pkg-config --libs --cflags icu-uc icu-io sqlite3`
 
 clean:
 	rm -f corelib/libdatabase.so

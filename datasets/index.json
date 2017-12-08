@@ -7,6 +7,7 @@
 		"description": "Last words of Texas Death Row Inmates",
 		"headers": ["Execution #", "Last Name", "First Name", "TDCJ Number", "Age", "Date", "Race", "County", "Last Statement"],
 		"document_column": 0,
+		"regex": "\\p{Letter}+",
 		"data_columns": [1, 2, 4, 6, 7, 8]
 	},
 	"gutenberg.csv":{
@@ -15,8 +16,31 @@
 		"tar_size": 4993647686,
 		"size": 13301759134,
 		"description": "Entire corpus of Project Gutenberg",
-		"headers": ["Number","Title","Author","Language","String"],
+		"headers": ["Number", "Title", "Author", "Language", "String"],
 		"document_column": 0,
-		"data_columns": [0,1,2,3,4]
+		"regex": "\\p{Letter}+",
+		"data_columns": [0, 1, 2, 3, 4]
+	},
+	"schools.csv":{
+		"name": "schools.csv",
+		"id": 2,
+		"tar_size": 367982,
+		"size": 1335074,
+		"description": "2016 DOE High School School Database",
+		"headers": ["dbn", "school_name", "borough", "building_code", "shared_space", "phone_number", "fax_number", "school_email", "grade_span_min", "grade_span_max", "expgrade_span_min", "expgrade_span_max", "year_at_scale", "bus", "subway", "primary_address_line_1", "city", "state_code", "Postcode", "website", "total_students", "campus_name", "school_type", "overview_paragraph", "program_highlights", "language_classes", "advancedplacement_courses", "diplomaendorsements", "extracurricular_activities", "psal_sports_boys", "psal_sports_girls", "psal_sports_coed", "school_sports", "partner_cbo", "partner_hospital", "partner_highered", "partner_cultural", "partner_nonprofit", "partner_corporate", "partner_financial", "partner_other", "addtl_info1", "addtl_info2", "start_time", "end_time", "se_services", "ell_programs", "school_accessibility_description", "number_programs", "priority01", "priority02", "priority03", "priority04", "priority05", "priority06", "priority07", "priority08", "priority09", "priority10", "Latitude", "Longitude", "Community Board", "Council District", "Census Tract", "BIN", "BBL", "NTA"],
+		"document_column": 1,
+		"regex": "[\\p{Letter}\\p{Number}]+",
+		"data_columns": [0, 1, 2, 3, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+	},
+	"bus_breakdowns.csv":{
+		"name": "bus_breakdowns.csv",
+		"id": 3,
+		"tar_size": 6270140,
+		"size": 41651219,
+		"description": "DOE Bus Breakdowns",
+		"headers": ["School_Year", "Busbreakdown_ID", "Run_Type", "Bus_No", "Route_Number", "Reason", "Schools_Serviced", "Occurred_On", "Created_On", "Boro", "Bus_Company_Name", "How_Long_Delayed", "Number_Of_Students_On_The_Bus", "Has_Contractor_Notified_Schools", "Has_Contractor_Notified_Parents", "Have_You_Alerted_OPT", "Informed_On", "Incident_Number", "Last_Updated_On", "Breakdown_or_Running_Late", "School_Age_or_PreK"],
+		"document_column": 1,
+		"regex": "[\\p{Letter}\\p{Number}]+",
+		"data_columns": [1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 19, 20]
 	}
 }

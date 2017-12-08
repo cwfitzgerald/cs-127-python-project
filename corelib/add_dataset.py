@@ -30,6 +30,8 @@ def add_csv_to_database(filenames, delete=False):
 
     c = connect.cursor()
 
+    tty_rows, tty_columns = map(int, os.popen('stty size', 'r').read().split())
+
     for filename, shortname, col, dataset_id in zip(filenames, filenames_short, id_cols, dataset_ids):
 
         if (delete):
@@ -47,7 +49,13 @@ def add_csv_to_database(filenames, delete=False):
 
             id_val = row[col]
 
-            sys.stdout.write("\r\033[K\r\t{} -- Writing row #{}: {}".format(filename, i, id_val))
+            coretext = "{} -- Writing row #{}: {}".format(filename, i, id_val)
+            printlen = 8 + len(coretext)
+            trimval = tty_columns - printlen
+            if (trimval < 0):
+                coretext = coretext[:trimval]
+
+            sys.stdout.write("\r\033[K\r\t{}".format(coretext))
             sys.stdout.flush()
 
             c.execute('''INSERT OR IGNORE INTO data (file_id, contents) VALUES (:file_id, :contents)''',
