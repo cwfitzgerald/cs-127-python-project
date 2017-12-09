@@ -6,14 +6,12 @@
 #include <iomanip>
 #include <iostream>
 #include <json.hpp>
-#include <locale>
 #include <memory>
 #include <sparsehash/dense_hash_map>
 #include <sparsehash/dense_hash_set>
 #include <sparsehash/sparse_hash_map>
 #include <sparsehash/sparse_hash_set>
 #include <sqlite3.h>
-#include <sys/ioctl.h>
 #include <thread>
 #include <unicode/regex.h>
 #include <unicode/unistr.h>

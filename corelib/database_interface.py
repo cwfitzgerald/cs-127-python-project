@@ -97,23 +97,40 @@ def iterate_over_file(dataset_name):
         yield (ident, contents)
 
 
-def lookup_id(dataset_name, id):
+def lookup_data_id(dataset_id, ident):
     create_tables()
     cursor = tlc.connection.cursor()
 
-    dataset_name = os.path.basename(dataset_name)
-
-    dataset_id = settings[dataset_name]["id"]
-
-    cursor.execute('''SELECT contents FROM data WHERE filename = :filename and key = :id''',
-                   {"filename": dataset_id})
+    cursor.execute('''SELECT contents FROM data WHERE file_id = :file_id and key = :ident''',
+                   {"file_id": dataset_id, "ident": ident})
 
     res = cursor.fetchone()
 
     if (res is None):
-        return ValueError("No id found")
+        return ValueError("No data id found")
 
-    contents = json.loads(res[0], encoding='utf8', errors="backslashescape")
+    contents = json.loads(res[0])
+
+    return contents
+
+
+def lookup_iindex_id(dataset_id, ident):
+    if ident is None:
+        return []
+
+    create_tables()
+
+    cursor = tlc.connection.cursor()
+
+    cursor.execute('''SELECT contents FROM iindex WHERE file_id = :file_id and key = :ident''',
+                   {"file_id": dataset_id, "ident": ident})
+
+    res = cursor.fetchone()
+
+    if (res is None):
+        return ValueError("No iindex id found")
+
+    contents = json.loads(res[0])
 
     return contents
 
