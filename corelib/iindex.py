@@ -21,12 +21,11 @@ import re
 import sys
 
 
-@cachetools.cached(cachetools.LRUCache(1000000))
 def iindex_search(dataset_id, search_term):
     '''
     inputs: dataset_id  - id of dataset to search through
             search_term - a string telling what to search for
-    output: a set of all resulting document name
+    output: (document id : positive/negative, [(column of match, submatch start, submatch end)...])
     '''
 
     search_list = search_term.split()
@@ -36,11 +35,9 @@ def iindex_search(dataset_id, search_term):
 
     regex_prog = re.compile(word_separator_regex.join(search_list), re.UNICODE | re.IGNORECASE)
 
-    unique_matches = matches[0]
-
     unique_matches = functools.reduce(operator.and_, matches)
 
-    match_pairs = []
+    match_pairs = {}
     # search each match for the string
     for match in unique_matches:
         full_text = db.lookup_data_id(dataset_id, match)
@@ -51,4 +48,6 @@ def iindex_search(dataset_id, search_term):
         submatches = list(itertools.chain.from_iterable(submatches))
 
         if len(submatches) > 0:
-            match_pairs.append((match, submatches))
+            match_pairs[match] = (True, submatches)
+
+    return match_pairs

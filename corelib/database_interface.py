@@ -97,16 +97,12 @@ def iterate_over_file(dataset_name):
         yield (ident, contents)
 
 
-def lookup_id(dataset_name, id):
+def lookup_data_id(dataset_id, ident):
     create_tables()
     cursor = tlc.connection.cursor()
 
-    dataset_name = os.path.basename(dataset_name)
-
-    dataset_id = settings[dataset_name]["id"]
-
-    cursor.execute('''SELECT contents FROM data WHERE filename = :filename and key = :id''',
-                   {"filename": dataset_id})
+    cursor.execute('''SELECT contents FROM data WHERE file_id = :file_id and key = :id''',
+                   {"file_id": dataset_id, "id": ident})
 
     res = cursor.fetchone()
 
@@ -116,6 +112,40 @@ def lookup_id(dataset_name, id):
     contents = json.loads(res[0], encoding='utf8', errors="backslashescape")
 
     return contents
+
+
+def lookup_iindex_id(dataset_id, ident):
+    create_tables()
+    cursor = tlc.connection.cursor()
+
+    cursor.execute('''SELECT contents FROM iindex WHERE file_id = :file_id and key = :id''',
+                   {"file_id": dataset_id, "id": ident})
+
+    res = cursor.fetchone()
+
+    if (res is None):
+        return ValueError("No id found")
+
+    contents = json.loads(res[0], encoding='utf8', errors="backslashescape")
+
+    return contents
+
+
+def lookup_data_range(dataset_id):
+    create_tables()
+    cursor = tlc.connection.cursor()
+
+    cursor.execute('''SELECT max(key) FROM data WHERE file_id = :file_id''',
+                   {"file_id": dataset_id})
+
+    res_max = cursor.fetchone()
+
+    cursor.execute('''SELECT min(key) FROM data WHERE file_id = :file_id''',
+                   {"file_id": dataset_id})
+
+    res_min = cursor.fetchone()
+
+    return (res_min[0], res_max[0])
 
 
 @util.run_once
