@@ -7,12 +7,17 @@ import operator
 import re
 
 
-def iindex_search(dataset_id, search_term):
+def iindex_search(dataset_name, search_term):
     '''
-    inputs: dataset_id  - id of dataset to search through
-            search_term - a string telling what to search for
-    output: (document id : positive/negative, [(column of match, submatch start, submatch end)...])
+    inputs: dataset_name - id of dataset to search through
+            search_term  - a string telling what to search for
+    output: (document id : [(column of match, submatch start, submatch end)...])
     '''
+
+    search_list = search_term.split()
+
+    dataset_id = db.settings[dataset_name]["id"]
+    word_separator_regex = db.settings[dataset_name]["pyregex"]
 
     lookup_id = [db.translate_string(dataset_id, term) for term in search_list]
     matches = [set(db.lookup_iindex_id(dataset_id, ident)) for ident in lookup_id]
@@ -32,6 +37,6 @@ def iindex_search(dataset_id, search_term):
         submatches = list(itertools.chain.from_iterable(submatches))
 
         if len(submatches) > 0:
-            match_pairs[match] = (True, submatches)
+            match_pairs[match] = submatches
 
     return match_pairs

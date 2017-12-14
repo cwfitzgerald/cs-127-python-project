@@ -98,6 +98,9 @@ def iterate_over_file(dataset_name):
 
 
 def lookup_data_id(dataset_id, ident):
+    if ident is None:
+        return []
+
     create_tables()
     cursor = tlc.connection.cursor()
 
@@ -107,7 +110,7 @@ def lookup_data_id(dataset_id, ident):
     res = cursor.fetchone()
 
     if (res is None):
-        return ValueError("No data id found")
+        raise ValueError("No data id found")
 
     contents = json.loads(res[0])
 
@@ -128,7 +131,8 @@ def lookup_iindex_id(dataset_id, ident):
     res = cursor.fetchone()
 
     if (res is None):
-        return ValueError("No iindex id found")
+        print(dataset_id, ident)
+        raise ValueError("No iindex id found")
 
     contents = json.loads(res[0])
 
