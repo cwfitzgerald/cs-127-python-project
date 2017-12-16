@@ -309,7 +309,7 @@ def main():
     parser.add_argument('--clean-all', help="Clean EVERYTHING", action="store_true")
     parser.add_argument('--download', help="Download csvs", action="store_true")
     parser.add_argument('--max', '--max-csv-size',
-                        help="Maximum csv size in megabytes to add to database, 0 for none: (default 200",
+                        help="Maximum csv size in megabytes to add to database, 0 for none: (default 200)",
                         type=float, default=100)
     arguments = parser.parse_args()
 

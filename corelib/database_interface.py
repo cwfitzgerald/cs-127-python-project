@@ -1,3 +1,4 @@
+import cachetools.func
 import corelib.util as util
 import csv
 import ctypes
@@ -44,16 +45,18 @@ def create_tables():
     cursor.execute('''CREATE TABLE IF NOT EXISTS iindex (file_id integer, key integer primary key, contents text)''')
 
 
+@cachetools.func.lru_cache(16)
 def get_dataset_id(dataset_name):
     return settings[dataset_name]["id"]
 
 
+@cachetools.func.lru_cache(16)
 def _rows(table, dataset_name):
     create_tables()
     cursor = tlc.connection.cursor()
 
     dataset_name = os.path.basename(dataset_name)
-    dataset_id = settings[dataset_name]["id"]
+    dataset_id = get_dataset_id(dataset_name)
 
     cursor.execute('''SELECT count(*) FROM {} WHERE file_id = :file_id'''.format(table),
                    {"table": table, "file_id": dataset_id})
@@ -100,6 +103,7 @@ def iterate_over_file(dataset_id, start=None, end=None):
         yield (ident, contents)
 
 
+@cachetools.func.lru_cache(128)
 def lookup_data_id(dataset_id, ident):
     if ident is None:
         return []
@@ -120,6 +124,7 @@ def lookup_data_id(dataset_id, ident):
     return contents
 
 
+@cachetools.func.lfu_cache(256)
 def lookup_iindex_id(dataset_id, ident):
     if ident is None:
         return []
@@ -142,6 +147,7 @@ def lookup_iindex_id(dataset_id, ident):
     return contents
 
 
+@cachetools.func.lru_cache(16)
 def lookup_data_range(dataset_id):
     create_tables()
     cursor = tlc.connection.cursor()
@@ -178,6 +184,8 @@ def build_iindex_database(filename):
     helper_dll.build_iindex_database(bytes(filename, encoding='utf8'))
 
 
+# Small cache to prevent calling off to C++ library
+@cachetools.func.lfu_cache(256)
 def translate_string(dataset_id, string):
     global helper_dll
     create_tables()

@@ -5,7 +5,7 @@ Core libraries managing the database/query engine.
 ## Components  
  - `import corelib.add_dataset as ad` function for adding csv files to the database  
  - `import corelib.database_interface as db` functions for accessing the database  
- - `import corelib.iindex as iindex` function for doing iindex queries  
+ - `import corelib.iindex as iindex` function for doing iindex queries (not search queries)  
  - `import corelib.query_parser as parser` functions for lexing and parsing search queries  
  - `import corelib.query_processor as processor` function for evaluating queries  
   
@@ -40,27 +40,27 @@ dataset_id = db.get_dataset_id(dataset_name)
 column_list = db.lookup_data_id(dataset_id, document_id)  
 ```  
   
-The results will be in a list of columns, each column being the text within it. You may use the submatch_column to index into this array.
+The results will be in a list of columns, each column being the text within it. You may use the submatch_column to index into this array.  
   
-### Paging through documents
+### Paging through documents  
   
-To page through the documents in a dataset you can use the following functions
+To page through the documents in a dataset you can use the following functions  
   
 ```python  
 dataset_id = db.get_dataset_id(dataset_name)  
-data_min, data_max = db.lookup_data_range(dataset_id)
+data_min, data_max = db.lookup_data_range(dataset_id)  
   
 # only an example use  
 for start in range(data_min, data_max, 10):  
     # one loop per page  
     for content in db.iterate_over_file(dataset_id, start, start + 10):  
         # do stuff with the content  
-```
+```  
   
-### Find if dataset is in the database
+### Find if dataset is in the database  
   
 ```python  
-for dataset, set in db.settings.items():  
+for dataset, dataset_properties in db.settings.items():  
     # loop through all known datasets  
     if (db.data_rows(dataset)):  
         # dataset in database  

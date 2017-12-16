@@ -5,8 +5,6 @@ import itertools
 import json
 import operator
 import os
-import pickle
-import pickletools
 import sqlite3
 import sys
 
