@@ -11,17 +11,17 @@ Core libraries managing the database/query engine.
   
 The server will only need db, parser, and processor to do all of it's duties. Each function is described below, using the aliases used above.  
 
-## Server use-case
+## Server use-case  
   
-### Running Queries
+### Running Queries  
   
-To take a query, parse it, then get the results, run these functions
+To take a query, parse it, then get the results, run these functions  
   
 ```python  
 tokens = parser.lex_query(query)  
 tree = parser.parse_query(tokens)  
 results = processor.run_parsed_query(dataset_name, tree)  
-```
+```  
   
 The results will be in the following format:  
 ```python  
@@ -29,42 +29,42 @@ The results will be in the following format:
                  submatch_start_offset,   
                  submatch_stop_offset (exclusive)  
                  )...]}  
-```
+```  
   
-### Getting document text
+### Getting document text  
   
-To find the full document text, run these functions
+To find the full document text, run these functions  
   
 ```python  
 dataset_id = db.get_dataset_id(dataset_name)  
 column_list = db.lookup_data_id(dataset_id, document_id)  
-```
+```  
   
 The results will be in a list of columns, each column being the text within it. You may use the submatch_column to index into this array.
-
+  
 ### Paging through documents
-
+  
 To page through the documents in a dataset you can use the following functions
-
-```python
+  
+```python  
 dataset_id = db.get_dataset_id(dataset_name)  
 data_min, data_max = db.lookup_data_range(dataset_id)
-
-# only an example use
-for start in range(data_min, data_max, 10):
-    # one loop per page
-    for content in db.iterate_over_file(dataset_id, start, start + 10):
-        # do stuff with the content
+  
+# only an example use  
+for start in range(data_min, data_max, 10):  
+    # one loop per page  
+    for content in db.iterate_over_file(dataset_id, start, start + 10):  
+        # do stuff with the content  
 ```
-
+  
 ### Find if dataset is in the database
-
-```python
-for dataset, set in db.settings.items():
-    # loop through all known datasets
-    if (db.data_rows(dataset)):
-        # dataset in database
-```
+  
+```python  
+for dataset, set in db.settings.items():  
+    # loop through all known datasets  
+    if (db.data_rows(dataset)):  
+        # dataset in database  
+```  
   
 ## Reference  
   
