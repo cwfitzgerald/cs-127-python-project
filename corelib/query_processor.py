@@ -6,8 +6,8 @@ import functools
 import operator
 
 
-def run_parsed_query(dataset_name, tree_head):
-    return _run_query_node(dataset_name, db.settings[dataset_name]["id"], tree_head)
+def run_parsed_query(dataset_name, query_tree):
+    return _run_query_node(dataset_name, db.settings[dataset_name]["id"], query_tree)
 
 
 def _run_query_node(dataset_name, dataset_id, node):
@@ -40,7 +40,7 @@ def _run_query_not(dataset_name, dataset_id, node):
     query_documents = [k for k in results.keys()]
 
     min_val, max_val = db.lookup_data_range(dataset_id)
-    matches = {doc_id: () for doc_id in range(min_val, max_val) if doc_id not in query_documents}
+    matches = {doc_id: [(-1, -1, -1)] for doc_id in range(min_val, max_val) if doc_id not in query_documents}
     return matches
 
 
@@ -67,10 +67,6 @@ def _run_query_and(dataset_name, dataset_id, node):
     for r in result_sets:
         for doc, submatches in r.items():
             if doc in documents:
-                if len(submatches) > 0:
-                    for submatch in submatches:
-                        merged[doc].append(submatch)
-                else:
-                    merged[doc].append((,))
-
+                for submatch in submatches:
+                    merged[doc].append(submatch)
     return merged

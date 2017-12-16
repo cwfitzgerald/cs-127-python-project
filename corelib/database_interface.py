@@ -44,6 +44,10 @@ def create_tables():
     cursor.execute('''CREATE TABLE IF NOT EXISTS iindex (file_id integer, key integer primary key, contents text)''')
 
 
+def get_dataset_id(dataset_name):
+    return settings[dataset_name]["id"]
+
+
 def _rows(table, dataset_name):
     create_tables()
     cursor = tlc.connection.cursor()
@@ -70,15 +74,14 @@ def iindex_rows(dataset_name):
     return _rows("iindex", dataset_name)
 
 
-def iterate_over_file(dataset_name):
+def iterate_over_file(dataset_id, start=None, end=None):
     create_tables()
     cursor = tlc.connection.cursor()
 
-    dataset_name = os.path.basename(dataset_name)
-    dataset_id = settings[dataset_name]["id"]
-
-    cursor.execute('''SELECT key, contents FROM data WHERE filename = :filename''',
-                   {"filename": dataset_id})
+    cursor.execute('''SELECT key, contents FROM data WHERE file_id = :file_id {} {}'''
+                   .format("and key >= :start" if start is not None else "",
+                           "and key < :end" if end is not None else ""),
+                   {"file_id": dataset_id, "start": start, "end": end})
 
     while True:
         res = cursor.fetchone()
@@ -153,7 +156,7 @@ def lookup_data_range(dataset_id):
 
     res_min = cursor.fetchone()
 
-    return (res_min[0], res_max[0])
+    return (res_min[0], res_max[0] + 1)
 
 
 @util.run_once

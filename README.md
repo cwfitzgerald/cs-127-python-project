@@ -4,6 +4,16 @@
 
 Our project is a web application for searching key terms within multiple datasets. We plan to implement basic sentiment analysis and stemming, along with a smart search algorithm for multiple key terms. Our web page will allow for easy navigation between documents and results, provide document statistics relevant to the search and highlight all results for the user. In addition, we plan to implement caching for elevated performance of repetitive searches.
 
+## Setup Server
+
+Server setup is simple and takes place in two steps. First you must download all the datasets and build the database. This is handled by setup_coordinator.py.
+
+```
+./setup_coordinator.py
+```
+
+This will make sure you have all the dependencies you need and builds all the c++ code.
+
 ## Structure of the Project
 
  - Flask Interface
@@ -25,14 +35,12 @@ Our project is a web application for searching key terms within multiple dataset
  - Core
    - Inverse Index Generator
    - Query Parser
-   - Sentiment Analysis
-   - Stemming
    - Smart search algorithm
      - Whole phrase
      - Contained individually within
      - Parts of phrase together or individually
    - Document statistic generation
-   - Caching (SQLite)
+   - Caching (Memoization)
 
 ## Folder Structure
 
