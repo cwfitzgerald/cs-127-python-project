@@ -7,7 +7,7 @@ import operator
 
 
 def run_parsed_query(dataset_name, query_tree):
-    return _run_query_node(dataset_name, db.settings[dataset_name]["id"], query_tree)
+    return _run_query_node(dataset_name, db.get_dataset_id(dataset_name), query_tree)
 
 
 def _run_query_node(dataset_name, dataset_id, node):
