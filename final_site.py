@@ -4,39 +4,43 @@ import corelib.query_parser as parser
 from flask import Flask, render_template, request
 app = Flask(__name__, template_folder="flask_data/templates", static_folder="flask_data/static")
 
-##Temporary list of data list filenames.
-##Will pull from actual file structure when necessary.
-csv_list = [("Bus Breakdowns",'bus_breakdowns.csv'), ("Offenders", 'offenders.csv')]
+# Temporary list of data list filenames.
+# Will pull from actual file structure when necessary.
+csv_list = [("Bus Breakdowns", 'bus_breakdowns.csv'), ("Offenders", 'offenders.csv')]
+
 
 @app.route("/")
 def main_page():
-    return db.settings.items()
-    """
     list1 = []
     for dataset, dataset_properties in db.settings.items():
-        list1.append(dataset)
-    return list1"""
-    #return render_template('main.html', csv_list = csv_list)
+        # loop through all known datasets
+        if (db.data_rows(dataset)):
+            list1.append(dataset)
+    return render_template('main.html', csv_list=list1)
 
 
 @app.route("/fileres", methods=['GET', 'POST'])
 def res_page():
     selected = request.form.get('dataset_selection')
     search_term = request.form.get('search_term')
-    ##me trying to run the entry dictionary
+    # me trying to run the entry dictionary
     tokens = parser.lex_query(str(search_term))
     tree = parser.parse_query(tokens)
-    entry_dict = processor.run_parsed_query("bus_breakdowns.csv", tree)
+    entry_dict = processor.run_parsed_query("offenders.csv", tree)
+    print(entry_dict)
     return(str(selected + "\n" + search_term))
+
 
 def get_entry_names():
     return "hello"
+
 
 @app.route("/filedisp", methods=['GET', 'POST'])
 def filedisp():
     return "hello"
 
-app.run(debug=True, host = '0.0.0.0', port = 8000, threaded=False)
+
+app.run(debug=True, host='0.0.0.0', port=8000, threaded=False)
 #####################
 
 """#!/usr/bin/env python

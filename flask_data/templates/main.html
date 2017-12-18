@@ -13,7 +13,7 @@
           <div class="input-group">
             <select name="dataset_selection" class="select_main">
               {% for item in csv_list %}
-              <option value="{{ item[0] }}">{{ item[0] }}</option>
+              <option value="{{ item }}">{{ item }}</option>
               {% endfor %}
             </select>
             <input name="search_term" type="text">

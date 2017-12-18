@@ -19,12 +19,6 @@ helper_dll_path = util.relative_path(__file__, "libdatabase.so")
 helper_dll = None
 
 
-class ThreadLocalConnection(threading.local):
-    connection = sqlite3.connect(database_path)
-
-tlc = ThreadLocalConnection()
-
-
 def setup_dll():
     dll = ctypes.CDLL(helper_dll_path)
 
@@ -39,10 +33,13 @@ def setup_dll():
 
 @util.run_once
 def create_tables():
-    cursor = tlc.connection.cursor()
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
 
     cursor.execute('''CREATE TABLE IF NOT EXISTS data (file_id integer, key integer primary key, contents text)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS iindex (file_id integer, key integer primary key, contents text)''')
+
+    connection.commit()
 
 
 @cachetools.func.lru_cache(16)
@@ -53,7 +50,8 @@ def get_dataset_id(dataset_name):
 @cachetools.func.lru_cache(16)
 def _rows(table, dataset_name):
     create_tables()
-    cursor = tlc.connection.cursor()
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
 
     dataset_name = os.path.basename(dataset_name)
     dataset_id = get_dataset_id(dataset_name)
@@ -65,6 +63,8 @@ def _rows(table, dataset_name):
 
     if res is None:
         return 0
+
+    connection.commit()
 
     return res[0]
 
@@ -79,7 +79,8 @@ def iindex_rows(dataset_name):
 
 def iterate_over_file(dataset_id, start=None, end=None):
     create_tables()
-    cursor = tlc.connection.cursor()
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
 
     cursor.execute('''SELECT key, contents FROM data WHERE file_id = :file_id {} {}'''
                    .format("and key >= :start" if start is not None else "",
@@ -102,6 +103,8 @@ def iterate_over_file(dataset_id, start=None, end=None):
 
         yield (ident, contents)
 
+    connection.commit()
+
 
 @cachetools.func.lru_cache(128)
 def lookup_data_id(dataset_id, ident):
@@ -109,7 +112,8 @@ def lookup_data_id(dataset_id, ident):
         return []
 
     create_tables()
-    cursor = tlc.connection.cursor()
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
 
     cursor.execute('''SELECT contents FROM data WHERE file_id = :file_id and key = :ident''',
                    {"file_id": dataset_id, "ident": ident})
@@ -121,6 +125,8 @@ def lookup_data_id(dataset_id, ident):
 
     contents = json.loads(res[0])
 
+    connection.commit()
+
     return contents
 
 
@@ -130,8 +136,8 @@ def lookup_iindex_id(dataset_id, ident):
         return []
 
     create_tables()
-
-    cursor = tlc.connection.cursor()
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
 
     cursor.execute('''SELECT contents FROM iindex WHERE file_id = :file_id and key = :ident''',
                    {"file_id": dataset_id, "ident": ident})
@@ -144,13 +150,16 @@ def lookup_iindex_id(dataset_id, ident):
 
     contents = json.loads(res[0])
 
+    connection.commit()
+
     return contents
 
 
 @cachetools.func.lru_cache(16)
 def lookup_data_range(dataset_id):
     create_tables()
-    cursor = tlc.connection.cursor()
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
 
     cursor.execute('''SELECT max(key) FROM data WHERE file_id = :file_id''',
                    {"file_id": dataset_id})
@@ -161,6 +170,8 @@ def lookup_data_range(dataset_id):
                    {"file_id": dataset_id})
 
     res_min = cursor.fetchone()
+
+    connection.commit()
 
     return (res_min[0], res_max[0] + 1)
 
@@ -198,8 +209,3 @@ def translate_string(dataset_id, string):
     if res == -1:
         return None
     return res
-
-
-def commit():
-    create_tables()
-    tlc.connection.commit()
