@@ -31,7 +31,6 @@ def _run_query_node(dataset_name, dataset_id, node):
 
 def _run_query_term(dataset_name, dataset_id, node):
     ans = iindex.iindex_search(dataset_name, node.token[1])
-    print(node.token[1], ans)
     return ans
 
 
