@@ -10,7 +10,13 @@ csv_list = [("Bus Breakdowns",'bus_breakdowns.csv'), ("Offenders", 'offenders.cs
 
 @app.route("/")
 def main_page():
-    return render_template('main.html', csv_list = csv_list)
+    return db.settings.items()
+    """
+    list1 = []
+    for dataset, dataset_properties in db.settings.items():
+        list1.append(dataset)
+    return list1"""
+    #return render_template('main.html', csv_list = csv_list)
 
 
 @app.route("/fileres", methods=['GET', 'POST'])
