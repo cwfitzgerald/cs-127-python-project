@@ -1,7 +1,7 @@
 import corelib.database_interface as db
 import corelib.query_processor as qp
 from flask import Flask, render_template, request
-app = Flask(__name__)
+app = Flask(__name__) #, template_folder=flask/templates, static_folder=flask/static)
 
 ##Temporary list of data list filenames.
 ##Will pull from actual file structure when necessary.
@@ -21,6 +21,8 @@ def res_page():
     return(str(selected + "\n" + search_term))
 
 @app.route("/filedisp", methods=['GET', 'POST'])
+def filedisp():
+    return "hello"
 
 app.run(debug=True, host = '0.0.0.0', port = 8000)
 #####################
