@@ -1,7 +1,8 @@
 import corelib.database_interface as db
-import corelib.query_processor as qp
+import corelib.query_processor as processor
+import corelib.query_parser as parser
 from flask import Flask, render_template, request
-app = Flask(__name__) #, template_folder=flask/templates, static_folder=flask/static)
+app = Flask(__name__, template_folder="flask_data/templates", static_folder="flask_data/static")
 
 ##Temporary list of data list filenames.
 ##Will pull from actual file structure when necessary.
@@ -17,14 +18,19 @@ def res_page():
     selected = request.form.get('dataset_selection')
     search_term = request.form.get('search_term')
     ##me trying to run the entry dictionary
-    entry_dict = qp.run_parsed_query("bus_breakdowns.csv", search_term)
+    tokens = parser.lex_query(str(search_term))
+    tree = parser.parse_query(tokens)
+    entry_dict = processor.run_parsed_query("bus_breakdowns.csv", tree)
     return(str(selected + "\n" + search_term))
+
+def get_entry_names():
+    return "hello"
 
 @app.route("/filedisp", methods=['GET', 'POST'])
 def filedisp():
     return "hello"
 
-app.run(debug=True, host = '0.0.0.0', port = 8000)
+app.run(debug=True, host = '0.0.0.0', port = 8000, threaded=False)
 #####################
 
 """#!/usr/bin/env python
