@@ -110,11 +110,11 @@ def res_page():
 
 
 
-@app.route("/resultdisp", methods=['GET', 'POST'])
-def resultdisp():
+@app.route("/resultdisp/<int:entry_num>", methods=['GET', 'POST'])
+def resultdisp(entry_num):
     entry_dict = session.get('entry_dict')
     document_id_list = session.get('doc_ids')
-
+    return str(entry_num)
 
 
     print("\n\n\n\n\n")
