@@ -1,7 +1,7 @@
 import corelib.database_interface as db
 import corelib.query_processor as processor
 import corelib.query_parser as parser
-import itertools
+import itertools, operator
 from flask import Flask, render_template, request, session
 #from flask.ext.session import Session
 app = Flask(__name__, template_folder="flask_data/templates", static_folder="flask_data/static")
@@ -48,7 +48,7 @@ def res_page():
     # Create list of relevant 'file' id's
     key_list = []
     value_list = []
-    for key, value in entry_dict.items():
+    for key, value in sorted(entry_dict.items(), key=operator.itemgetter(0)):
         key_list.append(key)
         value_list.append(value)
 
@@ -69,6 +69,7 @@ def res_page():
     # Create list of tuples with file "name" and data of where relevant
     # search term was found. Differentiated per dataset.
     # return str(db.settings["offenders.csv"]["id"])
+
     preview_data = []
     doc_headers = db.settings[str(selected)]["headers"]
     print("doc_headers\n", doc_headers, "\n")
