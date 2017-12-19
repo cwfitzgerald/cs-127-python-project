@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import corelib.database_interface as db
 import corelib.query_processor as processor
 import corelib.query_parser as parser
