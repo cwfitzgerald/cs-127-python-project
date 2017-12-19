@@ -45,6 +45,8 @@ def res_page():
     entry_dict = processor.run_parsed_query(str(selected), tree)
     print("\n\n", entry_dict, "\n\n")
 
+    if (len(entry_dict) == 0):
+        return render_template('not_found.html', search_term = str(search_term), selected = str(selected))
     # Create list of relevant 'file' id's
     key_list = []
     value_list = []
@@ -87,16 +89,45 @@ def res_page():
         entry_ident = entry_column_list[doc_column]  # WILL BE PASSED TO HTML
 
         #Create search term location preview in entry.
+        """
+        [
+            [(8, 23, 26)],
+            [(8, 364, 367)],
+            [(8, 493, 496)],
+            [(8, 37, 40)],
+            [(8, 8, 11), (8, 268, 271), (8, 409, 412), (8, 461, 464), (8, 565, 568)]
+        ]
+        location_tup = [(8, 23, 26)]
+        location_tup = [(8, 8, 11), (8, 268, 271)]
+
+        amount_of_first_column_occurence = 1
+        amount_of_tups_in_location_tup = len(location_tup)
+        temp = location_tup[0][0]
+        if (amount_of_tups_in_location_tup > 1):
+            for x in range(1, amount_of_tups_in_location_tup):
+                if (location_tup[x][0] = temp):
+                    amount_of_first_column_occurence += 1
+                temp = location_tup[0][0]
+        temp2 = location_tup[0][2]
+        """
+
         pre_prev_ind = location_tup[0][1] - 15
         if (pre_prev_ind < 0):
             pre_prev_ind = 0
+
+        # If more than one instance
+        """
+        if (len(location_tup[0]) > 1)
+        """
         end_prev_ind = location_tup[0][2] + 40
+
         if (end_prev_ind > len(entry_column_list[location_tup[0][0]])):
             end_prev_ind = len(entry_column_list[location_tup[0][0]])
 
         pre_prev = "..." + entry_column_list[location_tup[0][0]][pre_prev_ind : location_tup[0][1]]
         word_prev = entry_column_list[location_tup[0][0]][location_tup[0][1] : location_tup[0][2]]
         end_prev = entry_column_list[location_tup[0][0]][location_tup[0][2] : end_prev_ind]
+
         # prev = "..." + entry_column_list[location_tup[0][0]][pre_prev_ind : end_prev_ind] # WILL BE PASSED TO HTLM
         preview_data.append( [entry_ident, (pre_prev, word_prev, end_prev)] )
 
