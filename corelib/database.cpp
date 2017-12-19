@@ -17,6 +17,7 @@
 #include <unicode/unistr.h>
 #include <unicode/ustream.h>
 #include <unicode/utypes.h>
+#include <unordered_map>
 #include <vector>
 
 using namespace std::string_literals;
@@ -67,7 +68,6 @@ namespace google {
 } // namespace google
 
 using dictionary_build_type = dense_hash_wrapper;
-using translation_storage_type = google::sparse_hash_map<std::string, int>;
 
 std::atomic<std::size_t> threads_done;
 std::atomic<std::size_t> rows_finished;
@@ -227,19 +227,6 @@ google::dense_hash_map<std::string, int64_t> add_iindex_to_database(const char* 
 	return ret;
 }
 
-static std::vector<translation_storage_type> translation_database;
-
-extern "C" void load_runtime_data() {
-	std::ifstream f("datasets/translations.json");
-	json j;
-
-	f >> j;
-
-	for (auto it = j.begin(); it != j.end(); ++it) {
-		translation_database.emplace_back(it.value().get<translation_storage_type>());
-	}
-}
-
 extern "C" void build_iindex_database(const char* filename) {
 	///////////////////
 	// LOAD SETTINGS //
@@ -320,17 +307,4 @@ extern "C" void build_iindex_database(const char* filename) {
 	json_translation_file_out << std::setw(4) << translation_json;
 
 	std::cout << "\r\033[K\r\t" << filename << " -- \u001b[32;1mAdded Translations\u001b[0m to translations.json\n";
-}
-
-extern "C" int translate_string(int dataset_id, const char* search_term) {
-	auto&& dict = translation_database[dataset_id];
-
-	auto it = dict.find(search_term);
-	bool found = it != dict.end();
-	if (found) {
-		return it->second;
-	}
-	else {
-		return -1;
-	}
 }

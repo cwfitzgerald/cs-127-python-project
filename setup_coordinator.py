@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import corelib.add_dataset
-import corelib.database_interface as db
-import corelib.util as util
 import enum
 import json
 import os
@@ -109,6 +106,13 @@ def check_submodules():
     if (False in successes.values()):
         error("Please run 'git submodule update --init --recursive'")
 
+check_python_modules()
+check_system_packages()
+check_submodules()
+
+import corelib.add_dataset
+import corelib.database_interface as db
+import corelib.util as util
 
 def run_make():
     section_title("Building all code:")
@@ -352,9 +356,6 @@ def main():
         clean_code()
 
     if (flag_build_code):
-        check_python_modules()
-        check_system_packages()
-        check_submodules()
         run_make()
 
     if (flag_download or flag_build_db):
