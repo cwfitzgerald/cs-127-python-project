@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='filelist.css') }}">
+    <title>Filedisplay</title>
+  </head>
+  <body>
+    <table>
+      <!-- Column Titles -->
+      <tr>
+        <th>Column</th>
+        <th>Data</th>
+      </tr>
+      <!-- Data -->
+      {% for column_header, column_data in data %}
+        <tr>
+          <td>{{ column_header }}</td>
+          <td>{{ column_data|safe }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

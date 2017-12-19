@@ -15,11 +15,10 @@
       <!-- Data -->
       {% for item in preview_data %}
       <tr>
-        <td><a href="{{ url_for('resultdisp', entry_num=item[0]) }}">{{ item[0] }}</a></td>
+        <td><a href="{{url_for('resultdisp', entry_num=item[2], dataset_id=dataset_id)}}">{{ item[0] }}</a></td>
         <td>{{ item[1][0] }}<span id="prev_word">{{ item[1][1] }}</span>{{ item[1][2] }}</td>
       </tr>
       {% endfor %}
     </table>
   </body>
-  <!--{{ url_for('resultdisp', entry_num=1) }}-->
 </html>

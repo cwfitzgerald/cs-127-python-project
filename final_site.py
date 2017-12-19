@@ -1,7 +1,7 @@
 import corelib.database_interface as db
 import corelib.query_processor as processor
 import corelib.query_parser as parser
-import itertools, operator
+import itertools, operator, collections
 from flask import Flask, render_template, request, session
 #from flask.ext.session import Session
 app = Flask(__name__, template_folder="flask_data/templates", static_folder="flask_data/static")
@@ -129,7 +129,7 @@ def res_page():
         end_prev = entry_column_list[location_tup[0][0]][location_tup[0][2] : end_prev_ind]
 
         # prev = "..." + entry_column_list[location_tup[0][0]][pre_prev_ind : end_prev_ind] # WILL BE PASSED TO HTLM
-        preview_data.append( [entry_ident, (pre_prev, word_prev, end_prev)] )
+        preview_data.append([entry_ident, (pre_prev, word_prev, end_prev), key])
 
     # Create list of all text in individual 'file' entry
     dataset_id = db.get_dataset_id(str(selected))
@@ -137,29 +137,42 @@ def res_page():
     column_list = db.lookup_data_id(dataset_id, key_list[0])
     print("Column List:", column_list)
 
-    return render_template('filelist.html', preview_data = preview_data, rel_entry_type = relevant_entry_col)
-    #return(str(selected + "\n" + search_term) + stringhello)
+    return render_template('filelist.html', preview_data=preview_data, rel_entry_type=relevant_entry_col, dataset_id=dataset_id)    #return(str(selected + "\n" + search_term) + stringhello)
 
 
 
-@app.route("/resultdisp/<int:entry_num>", methods=['GET', 'POST'])
-def resultdisp(entry_num):
+@app.route("/resultdisp/<int:dataset_id>/<int:entry_num>", methods=['GET', 'POST'])
+def resultdisp(dataset_id, entry_num):
     entry_dict = session.get('entry_dict')
     document_id_list = session.get('doc_ids')
-    return str(entry_num)
+    # <span id="prev_word"></span>
+    full_text = db.lookup_data_id(dataset_id, entry_num)[:]
 
+    matches = sorted(entry_dict[str(entry_num)])
 
-    print("\n\n\n\n\n")
-    print("PRINTING ENTRY DICT IN RESULT DISP")
-    print("\n\n")
-    print(entry_dict)
-    print(document_id_list)
-    #dict1 = session.get('entry_dict', None)
-    #search_entry = session.get('search', None)
-    #dataset_id = db.get_database_id(dataset_name)
-    #column_list = db.lookup_data_id(dataset_id, document_id)
-    return "hello"
+    offsets = collections.defaultdict(lambda: 0)
+    for col_id, start, end in matches:
+        front_tag = "<span id=\"prev_word\">"
+        rear_tag = "</span>"
 
+        taglength = len(front_tag) + len(rear_tag)
+
+        offset = offsets[col_id]
+
+        start += offset
+        end += offset
+
+        full_text[col_id] = full_text[col_id][:start] + front_tag + \
+            full_text[col_id][start:end] + rear_tag + full_text[col_id][end:]
+
+        offsets[col_id] += taglength
+
+    dataset_name = db.get_dataset_name(dataset_id)
+
+    column_getter = operator.itemgetter(*db.settings[dataset_name]["data_columns"])
+    columns = column_getter(list(zip(db.settings[dataset_name]["headers"], full_text)))
+
+    return render_template('displayfile.html', data=columns)
 """
 @app.route('/set/')
 def set():
