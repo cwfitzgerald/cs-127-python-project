@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import corelib.add_dataset
-import corelib.database_interface as db
-import corelib.util as util
 import enum
 import json
 import os
@@ -356,6 +353,10 @@ def main():
         check_system_packages()
         check_submodules()
         run_make()
+
+    import corelib.add_dataset
+    import corelib.database_interface as db
+    import corelib.util as util
 
     if (flag_download or flag_build_db):
         csv_list = check_list_of_csvs(maxsize)
