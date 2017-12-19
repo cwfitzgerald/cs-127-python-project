@@ -297,6 +297,9 @@ def clean_downloads():
 
 
 def main():
+    global db
+    global util
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--build', help="Build database and all code (default)", action="store_true")
     parser.add_argument('--build-code', help="Build all code (default)", action="store_true")
