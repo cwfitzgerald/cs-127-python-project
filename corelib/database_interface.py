@@ -18,15 +18,14 @@ settings = json.load(open(util.relative_path(__file__, "../datasets/index.json")
 helper_dll_path = util.relative_path(__file__, "libdatabase.so")
 helper_dll = None
 
+translations = {}
+
 
 def setup_dll():
     dll = ctypes.CDLL(helper_dll_path)
 
     dll.build_iindex_database.argtypes = [ctypes.c_char_p]
     dll.build_iindex_database.restype = None
-    dll.translate_string.argtypes = [ctypes.c_int, ctypes.c_char_p]
-    dll.translate_string.restype = ctypes.c_int
-    dll.load_runtime_data.restype = None
 
     return dll
 
@@ -40,6 +39,12 @@ def create_tables():
     cursor.execute('''CREATE TABLE IF NOT EXISTS iindex (file_id integer, key integer primary key, contents text)''')
 
     connection.commit()
+
+
+@util.run_once
+def load_json():
+    global translations
+    translations = json.load(open(util.relative_path(__file__, "../datasets/translations.json")))
 
 
 @cachetools.func.lru_cache(16)
@@ -181,16 +186,6 @@ def lookup_data_range(dataset_id):
     return (res_min[0], res_max[0] + 1)
 
 
-@util.run_once
-def load_runtime_data():
-    global helper_dll
-    create_tables()
-    if helper_dll is None:
-        helper_dll = setup_dll()
-
-    helper_dll.load_runtime_data()
-
-
 def build_iindex_database(filename):
     global helper_dll
     create_tables()
@@ -203,14 +198,8 @@ def build_iindex_database(filename):
 # Small cache to prevent calling off to C++ library
 @cachetools.func.lfu_cache(256)
 def translate_string(dataset_id, string):
-    global helper_dll
-    create_tables()
-    load_runtime_data()
-    if helper_dll is None:
-        helper_dll = setup_dll()
+    load_json()
 
-    res = helper_dll.translate_string(ctypes.c_int(dataset_id), bytes(string, encoding='utf8'))
+    index = translations[str(dataset_id)].get(string, -1)
 
-    if res == -1:
-        return None
-    return res
+    return index
