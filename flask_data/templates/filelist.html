@@ -6,19 +6,21 @@
     <title>Filelist Test</title>
   </head>
   <body>
+    <center>
     <table>
       <!-- Column Titles -->
       <tr>
-        <th>Relevant Entry ({{ rel_entry_type }})</th>
-        <th>Preview</th>
+        <th cellpadding="20">Relevant Entry ({{ rel_entry_type }})</th>
+        <th cellpadding="20">Preview</th>
       </tr>
       <!-- Data -->
       {% for item in preview_data %}
       <tr>
-        <td><a href="{{url_for('resultdisp', entry_num=item[2], dataset_id=dataset_id)}}">{{ item[0] }}</a></td>
-        <td>{{ item[1][0] }}<span id="prev_word">{{ item[1][1] }}</span>{{ item[1][2] }}</td>
+        <td align="center" id="entry"><a href="{{url_for('resultdisp', entry_num=item[2], dataset_id=dataset_id)}}">{{ item[0] }}</a></td>
+        <td align="center" id="preview">{{ item[1][0] }}<span id="prev_word">{{ item[1][1] }}</span>{{ item[1][2] }}</td>
       </tr>
       {% endfor %}
     </table>
+  </center>
   </body>
 </html>

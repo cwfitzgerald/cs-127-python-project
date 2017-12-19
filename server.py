@@ -19,8 +19,8 @@ app.secret_key = "hello"
 
 # Human Readable list of CSV Datasets (Hardcoded)
 
-csv_list = [("Bus Breakdowns", 'bus_breakdowns.csv'), ("Offenders", 'offenders.csv'),
-            ("Gutenberg (ALL)", 'gutenberg.csv'), ('Schools', 'schools.csv')]
+csv_list = [("Offenders", 'offenders.csv'), ('Schools', 'schools.csv'), ("Bus Breakdowns", 'bus_breakdowns.csv'),
+            ("Gutenberg (ALL)", 'gutenberg.csv'), ]
 
 
 @app.route("/")
@@ -141,7 +141,7 @@ def res_page():
 
         pre_prev = "..." + entry_column_list[location_tup[0][0]][pre_prev_ind: location_tup[0][1]]
         word_prev = entry_column_list[location_tup[0][0]][location_tup[0][1]: location_tup[0][2]]
-        end_prev = entry_column_list[location_tup[0][0]][location_tup[0][2]: end_prev_ind]
+        end_prev = entry_column_list[location_tup[0][0]][location_tup[0][2]: end_prev_ind] + "..."
 
         # prev = "..." + entry_column_list[location_tup[0][0]][pre_prev_ind : end_prev_ind] # WILL BE PASSED TO HTLM
         preview_data.append([entry_ident, (pre_prev, word_prev, end_prev), key])

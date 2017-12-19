@@ -6,19 +6,21 @@
     <title>Filedisplay</title>
   </head>
   <body>
-    <table>
+    <center>
+    <table border="1" cellpadding="0" cellspacing="0" width="85%" style="border-collapse:collapse;">
       <!-- Column Titles -->
       <tr>
-        <th>Column</th>
-        <th>Data</th>
+        <th style="padding: 5px 10px 5px 10px; font-size:20px;">Column</th>
+        <th style="padding: 5px 10px 5px 10px;font-size:20px;">Data</th>
       </tr>
       <!-- Data -->
       {% for column_header, column_data in data %}
         <tr>
-          <td>{{ column_header }}</td>
-          <td>{{ column_data|safe }}</td>
+          <td style="padding: 5px 12px 5px 12px;">{{ column_header }}</td>
+          <td style="padding: 5px 10px 5px 20px;">{{ column_data|safe }}</td>
         </tr>
       {% endfor %}
     </table>
+  </center>
   </body>
 </html>

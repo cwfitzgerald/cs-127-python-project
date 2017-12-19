@@ -1,3 +1,10 @@
 #prev_word {
   background-color: #FFFF00
 }
+#entry {
+  text-align: center;
+}
+
+#preview {
+  text-align: center;
+}

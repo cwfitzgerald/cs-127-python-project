@@ -1,38 +1,40 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <style>
+      .main {
+        font-size: 30px
+      }
+    </style>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
     <title>Canne Search Engine</title>
   </head>
   <body>
 
-    <div class="main", id="top_padding">
-    </div>
-
-    <div class="main">
-
-      <h2 class="main", id="logo_main">Canne</h2>
-
-      <form class="main" action="{{ url_for('res_page') }}" method="post">
+    <div id="parent">
+      <div id="child">
+      <center>
+      <h2 class="main", id="logo_main">Canne Search Engine</h2>
+      <h5><i>"No flare, becuase we care."</i></h5>
+      <form action="{{ url_for('res_page') }}" method="post">
         <div class="form-group">
           <div class="input-group">
+            <label>Select dataset: </label>
             <select name="dataset_selection" class="select_main">
               {% for item in csv_list %}
               <option value="{{ item[1] }}">{{ item[0] }}</option>
               {% endfor %}
             </select>
-            <br>
+            <br id="input">
             <input name="search_term" type="text">
           </div>
           <br>
-          <button type="submit" class="btn btn-default">Submit</button>
+          <button class="button" type="submit">Submit</button>
         </div>
       </form>
-
-    </div>
-
-    <div class="main", id="bottom_padding">
+    </center>
+      </div>
     </div>
 
   </body>
