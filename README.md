@@ -34,7 +34,7 @@ NOT
 
 You may also use quotation marks for an exact match or parathesis for grouping your search operators. 
 
-## Known Issue / Recommendation
+## Known Issues / Recommendations
 * Generally whole word (>2 letter) search terms tend to provide the best results.
 * Do not search a two digit number in the Bus Breakdowns dataset, it will take a very long time to load.
 
