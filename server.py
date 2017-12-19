@@ -44,6 +44,10 @@ def res_page():
     print(search_term)
     print("\n\n\nPRINTING SELECTED DATASET VALUE", selected, "\n\n")
 
+    db.load_json()
+    if (str(db.get_dataset_id(str(selected))) not in db.translations):
+        return render_template('nonexistant_dataset.html', dataset=str(selected))
+
     # Parse search term and create result dictionary
     tokens = parser.lex_query(str(search_term))
     tree = parser.parse_query(tokens)
