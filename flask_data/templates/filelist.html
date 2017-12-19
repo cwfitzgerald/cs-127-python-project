@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='filelist.css') }}">
+    <title>Filelist Test</title>
+  </head>
+  <body>
+    <a href="{{ url_for('resultdisp')}}">Test link for session</a>
+    <table>
+      <!-- Column Titles -->
+      <tr>
+        <th>Relevant Entry ({{ rel_entry_type }})</th>
+        <th>Preview</th>
+      </tr>
+      <!-- Data -->
+      {% for item in preview_data %}
+      <tr>
+        <td>{{ item[0] }}</td>
+        <td>{{ item[1][0] }}<span id="prev_word">{{ item[1][1] }}</span>{{ item[1][2] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>
