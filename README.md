@@ -14,6 +14,14 @@ Server setup is simple and takes place in two steps. First you must download all
 
 This will make sure you have all the dependencies you need and builds all the c++ code.
 
+Then you can run 
+
+```
+./server.py
+```
+
+which will launch the server on localhost:8000.
+
 ## Structure of the Project
 
  - Flask Interface
@@ -23,15 +31,7 @@ This will make sure you have all the dependencies you need and builds all the c+
    - Display results post enter
    - Results Page
      - Search bar on top
-     - Lists relevant documents w/ a bit of information (depending on dataset possibly)
-     - A way to navigate back to Home
    - Document info page
-     - Grep-like searching through the document
-     - Displaying the document with highlighting the results.
-       - List amount of word appearance
-     - Statistics about the document (some basic stat analysis)
-     - A way to navigate back to Home or Results.
-   - Host on Connor’s website (cs-project.connorwadefitzgerald.com)
  - Core
    - Inverse Index Generator
    - Query Parser
@@ -39,22 +39,14 @@ This will make sure you have all the dependencies you need and builds all the c+
      - Whole phrase
      - Contained individually within
      - Parts of phrase together or individually
-   - Document statistic generation
    - Caching (Memoization)
 
 ## Folder Structure
 
  - corelib
-   - \*.py text
+   - the core libraries that make things work
  - flask
-   - static
-     - \*.css text
-     - \*.png binary
-     - \*.svg binary
-   - templates
-     - \*.html text
-   - \*.py text
+   - all the data that flask needs
  - datasets
-   - \*.csv binary
-   - index.json text
+   - storage location for index.json and the actual database
 

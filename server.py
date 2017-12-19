@@ -3,19 +3,24 @@
 import corelib.database_interface as db
 import corelib.query_processor as processor
 import corelib.query_parser as parser
-import itertools, operator, collections
+import itertools
+import operator
+import collections
 from flask import Flask, render_template, request, session
-#from flask.ext.session import Session
+
+# from flask.ext.session import Session
 app = Flask(__name__, template_folder="flask_data/templates", static_folder="flask_data/static")
 app.secret_key = "hello"
-#SESSION_TYPE = 'redis'
-#app.config.from_object(__name__)
-#Session(app)
+# SESSION_TYPE = 'redis'
+# app.config.from_object(__name__)
+# Session(app)
 
 # Temporary list of data list filenames.
 
 # Human Readable list of CSV Datasets (Hardcoded)
-csv_list = [("Bus Breakdowns", 'bus_breakdowns.csv'), ("Offenders", 'offenders.csv'), ("Gutenberg (ALL)", 'gutenberg.csv'), ('Schools', 'schools.csv')]
+csv_list = [("Bus Breakdowns", 'bus_breakdowns.csv'), ("Offenders", 'offenders.csv'), 
+            ("Gutenberg (ALL)", 'gutenberg.csv'), ('Schools', 'schools.csv')]
+
 
 @app.route("/")
 def main_page():
@@ -48,7 +53,7 @@ def res_page():
     print("\n\n", entry_dict, "\n\n")
 
     if (len(entry_dict) == 0):
-        return render_template('not_found.html', search_term = str(search_term), selected = str(selected))
+        return render_template('not_found.html', search_term=str(search_term), selected=str(selected))
     # Create list of relevant 'file' id's
     key_list = []
     value_list = []
@@ -82,15 +87,15 @@ def res_page():
     relevant_entry_col = doc_headers[doc_column]
     print("relevant_entry_col\n", relevant_entry_col, "\n")
 
-    #Create data to be passed
+    # Create data to be passed
     for key, location_tup in itertools.zip_longest(key_list, value_list):
-        #Create list of all columns in entry
+        # Create list of all columns in entry
         entry_column_list = db.lookup_data_id(dataset_id, key)
 
-        #Create entry identifier based on document_column
+        # Create entry identifier based on document_column
         entry_ident = entry_column_list[doc_column]  # WILL BE PASSED TO HTML
 
-        #Create search term location preview in entry.
+        # Create search term location preview in entry.
         """
         [
             [(8, 23, 26)],
@@ -126,9 +131,9 @@ def res_page():
         if (end_prev_ind > len(entry_column_list[location_tup[0][0]])):
             end_prev_ind = len(entry_column_list[location_tup[0][0]])
 
-        pre_prev = "..." + entry_column_list[location_tup[0][0]][pre_prev_ind : location_tup[0][1]]
-        word_prev = entry_column_list[location_tup[0][0]][location_tup[0][1] : location_tup[0][2]]
-        end_prev = entry_column_list[location_tup[0][0]][location_tup[0][2] : end_prev_ind]
+        pre_prev = "..." + entry_column_list[location_tup[0][0]][pre_prev_ind: location_tup[0][1]]
+        word_prev = entry_column_list[location_tup[0][0]][location_tup[0][1]: location_tup[0][2]]
+        end_prev = entry_column_list[location_tup[0][0]][location_tup[0][2]: end_prev_ind]
 
         # prev = "..." + entry_column_list[location_tup[0][0]][pre_prev_ind : end_prev_ind] # WILL BE PASSED TO HTLM
         preview_data.append([entry_ident, (pre_prev, word_prev, end_prev), key])
@@ -139,8 +144,9 @@ def res_page():
     column_list = db.lookup_data_id(dataset_id, key_list[0])
     print("Column List:", column_list)
 
-    return render_template('filelist.html', preview_data=preview_data, rel_entry_type=relevant_entry_col, dataset_id=dataset_id)    #return(str(selected + "\n" + search_term) + stringhello)
-
+    return render_template('filelist.html', preview_data=preview_data,
+                           rel_entry_type=relevant_entry_col, dataset_id=dataset_id)
+    # return(str(selected + "\n" + search_term) + stringhello)
 
 
 @app.route("/resultdisp/<int:dataset_id>/<int:entry_num>", methods=['GET', 'POST'])
@@ -175,47 +181,5 @@ def resultdisp(dataset_id, entry_num):
     columns = column_getter(list(zip(db.settings[dataset_name]["headers"], full_text)))
 
     return render_template('displayfile.html', data=columns)
-"""
-@app.route('/set/')
-def set():
-    session['key'] = 'value'
-    return 'ok'
 
-@app.route('/get/')
-def get():
-    return session.get('key', 'not set')
-"""
-"""
-@app.route('/a')
-def a():
-    session['my_var'] = 'my_value'
-    return redirect(url_for('b'))
-
-@app.route('/b')
-def b():
-    my_var = session.get('my_var', None)
-    return my_var
-"""
 app.run(debug=True, host='0.0.0.0', port=8000, threaded=False)
-#####################
-
-"""#!/usr/bin/env python
-from flask import Flask, flash, redirect, render_template, \
-     request, url_for
-
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return render_template(
-        'index.html',
-        data=[{'name':'red'}, {'name':'green'}, {'name':'blue'}])
-
-@app.route("/test" , methods=['GET', 'POST'])
-def test():
-    select = request.form.get('comp_select')
-    return(str(select)) # just to see what select is
-
-if __name__=='__main__':
-    app.run(debug=True)
-"""
