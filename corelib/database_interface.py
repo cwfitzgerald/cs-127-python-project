@@ -48,6 +48,11 @@ def get_dataset_id(dataset_name):
 
 
 @cachetools.func.lru_cache(16)
+def get_dataset_name(dataset_id):
+    return (name for name, data in settings.items() if data["id"] == dataset_id).__next__()
+
+
+@cachetools.func.lru_cache(16)
 def _rows(table, dataset_name):
     create_tables()
     connection = sqlite3.connect(database_path)
