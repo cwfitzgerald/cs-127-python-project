@@ -2,26 +2,38 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <link rel="stylesheet" href="main.css">
     <title>Canne Search Engine</title>
   </head>
   <body>
+
+    <div class="main", id="top_padding">
+    </div>
+
     <div class="main">
+
       <h2 class="main", id="logo_main">Canne</h2>
 
-      <form class="" action="{{ url_for('res_page') }}" method="post">
+      <form class="main" action="{{ url_for('res_page') }}" method="post">
         <div class="form-group">
           <div class="input-group">
             <select name="dataset_selection" class="select_main">
               {% for item in csv_list %}
-              <option value="{{ item }}">{{ item }}</option>
+              <option value="{{ item[1] }}">{{ item[0] }}</option>
               {% endfor %}
             </select>
+            <br>
             <input name="search_term" type="text">
           </div>
+          <br>
           <button type="submit" class="btn btn-default">Submit</button>
         </div>
       </form>
 
     </div>
+
+    <div class="main", id="bottom_padding">
+    </div>
+
   </body>
 </html>
