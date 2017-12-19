@@ -234,7 +234,7 @@ def build_data_table(csv_list):
 
     section_title("Adding CSVs to database:")
 
-    corelib.add_dataset.add_csv_to_database([os.path.join("datasets/", name)
+    add_dataset.add_csv_to_database([os.path.join("datasets/", name)
                                              for name, status in csv_list.items()
                                              if status == CSVStatus.OK],
                                             delete=True)
