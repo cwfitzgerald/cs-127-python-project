@@ -22,6 +22,18 @@ Then you can run
 
 which will launch the server on localhost:8000.
 
+## How to Search
+
+Choose a dataset with the dropdown. You may then search for things with the following operators (in all caps)
+
+```
+AND
+OR
+NOT
+```
+
+You may also use quotation marks for an exact match or parathesis for grouping your search operators. 
+
 ## Structure of the Project
 
  - Flask Interface
