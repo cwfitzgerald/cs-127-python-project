@@ -106,6 +106,13 @@ def check_submodules():
     if (False in successes.values()):
         error("Please run 'git submodule update --init --recursive'")
 
+check_python_modules()
+check_system_packages()
+check_submodules()
+
+import corelib.add_dataset
+import corelib.database_interface as db
+import corelib.util as util
 
 def run_make():
     section_title("Building all code:")
@@ -234,7 +241,7 @@ def build_data_table(csv_list):
 
     section_title("Adding CSVs to database:")
 
-    add_dataset.add_csv_to_database([os.path.join("datasets/", name)
+    corelib.add_dataset.add_csv_to_database([os.path.join("datasets/", name)
                                              for name, status in csv_list.items()
                                              if status == CSVStatus.OK],
                                             delete=True)
@@ -297,9 +304,6 @@ def clean_downloads():
 
 
 def main():
-    global db
-    global util
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--build', help="Build database and all code (default)", action="store_true")
     parser.add_argument('--build-code', help="Build all code (default)", action="store_true")
@@ -352,14 +356,7 @@ def main():
         clean_code()
 
     if (flag_build_code):
-        check_python_modules()
-        check_system_packages()
-        check_submodules()
         run_make()
-
-    import corelib.add_dataset
-    import corelib.database_interface as db
-    import corelib.util as util
 
     if (flag_download or flag_build_db):
         csv_list = check_list_of_csvs(maxsize)
