@@ -49,7 +49,10 @@ def res_page():
     tree = parser.parse_query(tokens)
 
     # Create dictionary of all relevant entries and locations
-    entry_dict = processor.run_parsed_query(str(selected), tree)
+    try:
+        entry_dict = processor.run_parsed_query(str(selected), tree)
+    except ValueError:
+        return render_template('invalid.html', search_term=str(search_term))
     print("\n\n", entry_dict, "\n\n")
 
     if (len(entry_dict) == 0):
